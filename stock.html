@@ -22,22 +22,14 @@
     max-width: 480px;
     margin: 0 auto;
   }
-  header {
-    margin-bottom: 28px;
-  }
-  header h1 {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  header p {
-    font-size: 14px;
-    color: var(--text-sub);
-  }
-  .section {
-    margin-bottom: 28px;
-  }
+  header { margin-bottom: 28px; }
+  header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  header p { font-size: 14px; color: var(--text-sub); }
+  .section { margin-bottom: 28px; }
   .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 14px;
     font-weight: 700;
     color: var(--accent);
@@ -45,11 +37,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-  .card-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  .card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
   .card {
     display: flex;
     align-items: center;
@@ -58,136 +46,435 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 14px 16px;
-    text-decoration: none;
-    color: inherit;
     transition: border-color 0.15s ease, transform 0.1s ease;
   }
-  .card:active {
-    transform: scale(0.98);
+  .card:active { transform: scale(0.98); }
+  .card a {
+    flex: 1;
+    text-decoration: none;
+    color: inherit;
+    min-width: 0;
   }
-  .card:hover {
-    border-color: var(--accent);
-  }
-  .card-text .name {
-    font-size: 15px;
-    font-weight: 700;
-    margin-bottom: 2px;
-  }
-  .card-text .desc {
+  .card-text .name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .card-text .desc { font-size: 12px; color: var(--text-sub); }
+  .arrow { font-size: 18px; color: var(--text-sub); margin: 0 8px 0 12px; flex-shrink: 0; }
+  .del-btn {
+    margin-left: 4px;
+    padding: 6px 10px;
     font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
     color: var(--text-sub);
-  }
-  .arrow {
-    font-size: 18px;
-    color: var(--text-sub);
-    margin-left: 12px;
+    cursor: pointer;
     flex-shrink: 0;
   }
-  footer {
-    margin-top: 40px;
+  .add-toggle {
     font-size: 12px;
-    color: var(--text-sub);
-    text-align: center;
+    font-weight: 700;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
   }
+  .section-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .move-btn {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-sub);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    line-height: 1;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  .move-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .add-form {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .add-form.open { display: flex; }
+  .add-form input {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    width: 100%;
+  }
+  .add-form button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .add-form .hint { font-size: 12px; color: var(--text-sub); }
+  footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 </style>
 </head>
 <body>
 
 <header>
   <h1>주식 정보 허브</h1>
-  <p>운전하면서 들을 수 있는 시황·뉴스 모음</p>
+  <p>운전하면서 들을 수 있는 시황·뉴스 모음. 각 섹션에서 자유롭게 추가/삭제할 수 있어요.</p>
 </header>
 
-<div class="section">
-  <div class="section-title">시장 뉴스 / 모닝브리핑</div>
-  <div class="card-list">
-    <a class="card" href="https://www.hankyung.com/economy" target="_blank">
-      <div class="card-text">
-        <div class="name">한국경제 - 경제</div>
-        <div class="desc">국내 증시·경제 종합 뉴스</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-    <a class="card" href="https://www.youtube.com/@syukaworld" target="_blank">
-      <div class="card-text">
-        <div class="name">슈카월드 (유튜브)</div>
-        <div class="desc">경제·이슈 쉬운 설명, 듣기용으로 좋음</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-    <a class="card" href="https://www.youtube.com/@3protv" target="_blank">
-      <div class="card-text">
-        <div class="name">삼프로TV (유튜브)</div>
-        <div class="desc">매일 아침 증시 라이브 방송</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-  </div>
+<div id="stock-ticker-section" class="section">
+  <div class="section-title">관심 종목 실시간 시세</div>
+  <div id="tv-ticker-tape"></div>
 </div>
 
-<div class="section">
-  <div class="section-title">종목 시세 / 공시</div>
-  <div class="card-list">
-    <a class="card" href="https://finance.naver.com" target="_blank">
-      <div class="card-text">
-        <div class="name">네이버 증권</div>
-        <div class="desc">시세, 종목 토론, 뉴스 한눈에</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-    <a class="card" href="https://dart.fss.or.kr" target="_blank">
-      <div class="card-text">
-        <div class="name">DART 전자공시</div>
-        <div class="desc">기업 공식 공시 자료 (공식 정보)</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">운전 중 듣기 좋은 영상 / 방송</div>
-  <div class="card-list">
-    <a class="card" href="https://www.youtube.com/@MaeilEconomy" target="_blank">
-      <div class="card-text">
-        <div class="name">매일경제 (유튜브)</div>
-        <div class="desc">매일 시황 요약 영상</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-    <a class="card" href="https://www.youtube.com/@hankyungTV" target="_blank">
-      <div class="card-text">
-        <div class="name">한국경제TV (유튜브)</div>
-        <div class="desc">증시 마감 시황, 전문가 분석</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">미국 증시 / 글로벌</div>
-  <div class="card-list">
-    <a class="card" href="https://www.youtube.com/@yonhapnewstv" target="_blank">
-      <div class="card-text">
-        <div class="name">연합뉴스TV</div>
-        <div class="desc">실시간 뉴스, 미국 시황 포함</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-    <a class="card" href="https://kr.investing.com" target="_blank">
-      <div class="card-text">
-        <div class="name">Investing.com 한국어</div>
-        <div class="desc">실시간 시세, 캘린더, 환율</div>
-      </div>
-      <span class="arrow">→</span>
-    </a>
-  </div>
-</div>
+<div id="sections"></div>
 
 <footer>
-  즐겨찾기에 추가해두고 운전 시작 전 / 쉬는 시간에 확인하세요.
+  즐겨찾기에 추가해두고 운전 시작 전 / 쉬는 시간에 확인하세요.<br>
+  여러 기기에서 실시간으로 동기화됩니다.
 </footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  // ---------- 기본 데이터 ----------
+  var DEFAULT_DATA = {
+    sections: [
+      {
+        id: "stocks",
+        type: "stocks",
+        title: "관심 종목 시세 바로가기",
+        items: [
+          { code: "005930", name: "삼성전자" },
+          { code: "000660", name: "SK하이닉스" },
+          { code: "085660", name: "차바이오텍" }
+        ]
+      },
+      {
+        id: "news",
+        type: "links",
+        title: "시장 뉴스 / 모닝브리핑",
+        items: [
+          { name: "한국경제 - 경제", desc: "국내 증시·경제 종합 뉴스", url: "https://www.hankyung.com/economy" },
+          { name: "슈카월드 (유튜브)", desc: "경제·이슈 쉬운 설명, 듣기용으로 좋음", url: "https://www.youtube.com/@syukaworld" },
+          { name: "삼프로TV (유튜브)", desc: "매일 아침 증시 라이브 방송", url: "https://www.youtube.com/@3protv" }
+        ]
+      },
+      {
+        id: "quote",
+        type: "links",
+        title: "종목 시세 / 공시",
+        items: [
+          { name: "네이버 증권", desc: "시세, 종목 토론, 뉴스 한눈에", url: "https://finance.naver.com" },
+          { name: "DART 전자공시", desc: "기업 공식 공시 자료 (공식 정보)", url: "https://dart.fss.or.kr" }
+        ]
+      },
+      {
+        id: "drive",
+        type: "links",
+        title: "운전 중 듣기 좋은 영상 / 방송",
+        items: [
+          { name: "매일경제 (유튜브)", desc: "매일 시황 요약 영상", url: "https://www.youtube.com/@MaeilEconomy" },
+          { name: "한국경제TV (유튜브)", desc: "증시 마감 시황, 전문가 분석", url: "https://www.youtube.com/@hankyungTV" }
+        ]
+      },
+      {
+        id: "global",
+        type: "links",
+        title: "미국 증시 / 글로벌",
+        items: [
+          { name: "연합뉴스TV", desc: "실시간 뉴스, 미국 시황 포함", url: "https://www.youtube.com/@yonhapnewstv" },
+          { name: "Investing.com 한국어", desc: "실시간 시세, 캘린더, 환율", url: "https://kr.investing.com" }
+        ]
+      },
+      {
+        id: "youtube",
+        type: "links",
+        title: "투자 공부 / 추천 유튜브",
+        items: [
+          { name: "박곰희TV", desc: "초보자 대상 쉬운 재테크·투자 설명", url: "https://www.youtube.com/@bghfinance" },
+          { name: "소수몽키", desc: "미국 주식 위주 투자 분석, 초보 추천", url: "https://www.youtube.com/@sosumonkey" },
+          { name: "증시각도기TV", desc: "투자와 경제 동향 분석", url: "https://www.youtube.com/@koreanstockrider" },
+          { name: "오선의 미증시", desc: "미국 증시 시황 분석", url: "https://www.youtube.com/results?search_query=%EC%98%A4%EC%84%A0%EC%9D%98+%EB%AF%B8%EC%A6%9D%EC%8B%9C" }
+        ]
+      },
+      {
+        id: "study",
+        type: "links",
+        title: "주식 / 경제 기초 공부",
+        items: [
+          { name: "슈카월드", desc: "경제·금리·환율 등 기초 개념을 쉽고 재밌게 설명", url: "https://www.youtube.com/@syukaworld" },
+          { name: "삼프로TV", desc: "경제·투자 전반에 대한 강의식 콘텐츠, 매일 라이브", url: "https://www.youtube.com/@3protv" },
+          { name: "박곰희TV", desc: "투자 개념부터 차근차근, 입문자에 적합", url: "https://www.youtube.com/@bghfinance" },
+          { name: "김경필의 머니트레이닝(필쌤TV)", desc: "소비·자산관리 등 돈 관리 기초 공부", url: "https://www.youtube.com/results?search_query=%ED%95%84%EC%8C%A4TV+%EA%B0%80%EC%A0%95%EA%B2%BD%EC%A0%9C" }
+        ]
+      }
+    ]
+  };
+
+  // ---------- Firebase 설정 ----------
+  var firebaseConfig = {
+    apiKey: "AIzaSyCUfXHfU6Bi1aFI90izeI8mEH21yJv_Cac",
+    authDomain: "stock-96d08.firebaseapp.com",
+    databaseURL: "https://stock-96d08-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "stock-96d08",
+    storageBucket: "stock-96d08.firebasestorage.app",
+    messagingSenderId: "386185757176",
+    appId: "1:386185757176:web:79e72e41e361af5399560d"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.database();
+  var dbRef = db.ref("stockHub");
+
+  var data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  var isFirstLoad = true;
+
+  function saveData(d) {
+    dbRef.set(d);
+  }
+
+  // 즉시 1차 렌더링 (Firebase 응답 전에도 화면이 비어있지 않도록)
+  renderTickerTape();
+  renderSections();
+
+  // 실시간 동기화: 다른 기기에서 변경되면 자동으로 다시 그림
+  dbRef.on("value", function (snapshot) {
+    var val = snapshot.val();
+    if (val && val.sections) {
+      data = val;
+    } else if (isFirstLoad) {
+      // 데이터베이스가 비어있으면 기본 데이터로 초기화
+      data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData(data);
+    }
+    isFirstLoad = false;
+    renderTickerTape();
+    renderSections();
+  });
+
+  // ---------- 관심 종목 시세 ----------
+  function renderTickerTape() {
+    var container = document.getElementById("tv-ticker-tape");
+    container.innerHTML = "";
+    var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
+    var stocks = stockSection ? stockSection.items : [];
+    var symbols = stocks.map(function (s) {
+      return { proName: "KRX:" + s.code, title: s.name };
+    });
+    var script = document.createElement("script");
+    script.src = "https://s3.cdn.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+    script.async = true;
+    script.text = JSON.stringify({
+      symbols: symbols,
+      colorTheme: "light",
+      isTransparent: false,
+      displayMode: "adaptive",
+      locale: "kr"
+    });
+    container.appendChild(script);
+  }
+
+  // ---------- 섹션 렌더링 ----------
+  function makeCard(name, desc, url, onDelete) {
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.innerHTML = '<div class="card-text"><div class="name"></div><div class="desc"></div></div>';
+    a.querySelector(".name").textContent = name;
+    a.querySelector(".desc").textContent = desc;
+
+    var arrow = document.createElement("span");
+    arrow.className = "arrow";
+    arrow.textContent = "→";
+
+    var del = document.createElement("button");
+    del.className = "del-btn";
+    del.textContent = "삭제";
+    del.onclick = function () { onDelete(); };
+
+    card.appendChild(a);
+    card.appendChild(arrow);
+    card.appendChild(del);
+    return card;
+  }
+
+  function moveSection(idx, dir) {
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= data.sections.length) return;
+    var tmp = data.sections[idx];
+    data.sections[idx] = data.sections[newIdx];
+    data.sections[newIdx] = tmp;
+    saveData(data);
+    renderSections();
+  }
+
+  function renderSections() {
+    var root = document.getElementById("sections");
+    root.innerHTML = "";
+
+    data.sections.forEach(function (section, idx) {
+      if (section.type === "stocks") {
+        root.appendChild(buildStockSection(section, idx));
+      } else {
+        root.appendChild(buildLinkSection(section, idx));
+      }
+    });
+  }
+
+  function buildSectionTitle(title, idx, toggleLabel) {
+    var titleRow = document.createElement("div");
+    titleRow.className = "section-title";
+
+    var titleSpan = document.createElement("span");
+    titleSpan.textContent = title;
+    titleRow.appendChild(titleSpan);
+
+    var actions = document.createElement("div");
+    actions.className = "section-actions";
+
+    var upBtn = document.createElement("button");
+    upBtn.className = "move-btn";
+    upBtn.textContent = "↑";
+    upBtn.title = "위로 이동";
+    upBtn.disabled = idx === 0;
+    upBtn.onclick = function () { moveSection(idx, -1); };
+
+    var downBtn = document.createElement("button");
+    downBtn.className = "move-btn";
+    downBtn.textContent = "↓";
+    downBtn.title = "아래로 이동";
+    downBtn.disabled = idx === data.sections.length - 1;
+    downBtn.onclick = function () { moveSection(idx, 1); };
+
+    var toggleBtn = document.createElement("button");
+    toggleBtn.className = "add-toggle";
+    toggleBtn.textContent = toggleLabel;
+
+    actions.appendChild(upBtn);
+    actions.appendChild(downBtn);
+    actions.appendChild(toggleBtn);
+    titleRow.appendChild(actions);
+
+    return { titleRow: titleRow, toggleBtn: toggleBtn };
+  }
+
+  function buildStockSection(section, idx) {
+    var wrap = document.createElement("div");
+    wrap.className = "section";
+
+    var titleParts = buildSectionTitle(section.title, idx, "+ 종목 추가");
+    wrap.appendChild(titleParts.titleRow);
+
+    var list = document.createElement("div");
+    list.className = "card-list";
+    section.items.forEach(function (s, itemIdx) {
+      list.appendChild(makeCard(
+        s.name,
+        "네이버 증권 - 실시간 시세 (" + s.code + ")",
+        "https://finance.naver.com/item/main.naver?code=" + s.code,
+        function () {
+          section.items.splice(itemIdx, 1);
+          saveData(data);
+          renderTickerTape();
+          renderSections();
+        }
+      ));
+    });
+    wrap.appendChild(list);
+
+    var form = document.createElement("div");
+    form.className = "add-form";
+    form.innerHTML =
+      '<input type="text" placeholder="종목코드 (예: 005930)" maxlength="6" class="f-code">' +
+      '<input type="text" placeholder="종목명 (예: 삼성전자)" class="f-name">' +
+      '<button type="button" class="f-submit">추가</button>' +
+      '<div class="hint">종목코드는 네이버 증권에서 종목명 검색 후 URL의 6자리 숫자를 확인하세요.</div>';
+    wrap.appendChild(form);
+
+    titleParts.toggleBtn.onclick = function () { form.classList.toggle("open"); };
+    form.querySelector(".f-submit").onclick = function () {
+      var code = form.querySelector(".f-code").value.trim();
+      var name = form.querySelector(".f-name").value.trim();
+      if (!/^\d{6}$/.test(code) || !name) {
+        alert("종목코드는 숫자 6자리, 종목명을 입력해주세요.");
+        return;
+      }
+      section.items.push({ code: code, name: name });
+      saveData(data);
+      renderTickerTape();
+      renderSections();
+    };
+
+    return wrap;
+  }
+
+  function buildLinkSection(section, idx) {
+    var wrap = document.createElement("div");
+    wrap.className = "section";
+
+    var titleParts = buildSectionTitle(section.title, idx, "+ 추가");
+    wrap.appendChild(titleParts.titleRow);
+
+    var list = document.createElement("div");
+    list.className = "card-list";
+    section.items.forEach(function (item, itemIdx) {
+      list.appendChild(makeCard(item.name, item.desc, item.url, function () {
+        section.items.splice(itemIdx, 1);
+        saveData(data);
+        renderSections();
+      }));
+    });
+    wrap.appendChild(list);
+
+    var form = document.createElement("div");
+    form.className = "add-form";
+    form.innerHTML =
+      '<input type="text" placeholder="이름 (예: 내가 찾은 채널)" class="f-name">' +
+      '<input type="text" placeholder="설명 (선택)" class="f-desc">' +
+      '<input type="text" placeholder="URL (https://... )" class="f-url">' +
+      '<button type="button" class="f-submit">추가</button>';
+    wrap.appendChild(form);
+
+    titleParts.toggleBtn.onclick = function () { form.classList.toggle("open"); };
+    form.querySelector(".f-submit").onclick = function () {
+      var name = form.querySelector(".f-name").value.trim();
+      var desc = form.querySelector(".f-desc").value.trim();
+      var url = form.querySelector(".f-url").value.trim();
+      if (!name || !url) {
+        alert("이름과 URL을 입력해주세요.");
+        return;
+      }
+      if (!/^https?:\/\//.test(url)) url = "https://" + url;
+      section.items.push({ name: name, desc: desc, url: url });
+      saveData(data);
+      renderSections();
+    };
+
+    return wrap;
+  }
+</script>
 
 </body>
 </html>
