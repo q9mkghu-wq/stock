@@ -150,9 +150,11 @@
 
 <footer>
   즐겨찾기에 추가해두고 운전 시작 전 / 쉬는 시간에 확인하세요.<br>
-  추가/삭제한 항목은 이 브라우저(기기)에 저장됩니다.
+  여러 기기에서 실시간으로 동기화됩니다.
 </footer>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
   // ---------- 기본 데이터 ----------
   var DEFAULT_DATA = {
@@ -229,21 +231,41 @@
     ]
   };
 
-  var STORAGE_KEY = "stockHubData";
+  // ---------- Firebase 설정 ----------
+  var firebaseConfig = {
+    apiKey: "AIzaSyCUfXHfU6Bi1aFI90izeI8mEH21yJv_Cac",
+    authDomain: "stock-96d08.firebaseapp.com",
+    databaseURL: "https://stock-96d08-default-rtdb.firebaseio.com",
+    projectId: "stock-96d08",
+    storageBucket: "stock-96d08.firebasestorage.app",
+    messagingSenderId: "386185757176",
+    appId: "1:386185757176:web:79e72e41e361af5399560d"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.database();
+  var dbRef = db.ref("stockHub");
 
-  function loadData() {
-    try {
-      var saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  var data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+  var isFirstLoad = true;
+
+  function saveData(d) {
+    dbRef.set(d);
   }
 
-  function saveData(data) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
-  }
-
-  var data = loadData();
+  // 실시간 동기화: 다른 기기에서 변경되면 자동으로 다시 그림
+  dbRef.on("value", function (snapshot) {
+    var val = snapshot.val();
+    if (val && val.sections) {
+      data = val;
+    } else if (isFirstLoad) {
+      // 데이터베이스가 비어있으면 기본 데이터로 초기화
+      data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      saveData(data);
+    }
+    isFirstLoad = false;
+    renderTickerTape();
+    renderSections();
+  });
 
   // ---------- 관심 종목 시세 ----------
   function renderTickerTape() {
@@ -448,9 +470,6 @@
 
     return wrap;
   }
-
-  renderTickerTape();
-  renderSections();
 </script>
 
 </body>
