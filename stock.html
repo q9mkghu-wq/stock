@@ -273,24 +273,84 @@
 
   // ---------- 관심 종목 시세 ----------
   function renderTickerTape() {
-    var container = document.getElementById("tv-ticker-tape");
-    container.innerHTML = "";
+    var outer = document.getElementById("tv-ticker-tape");
+    outer.innerHTML = "";
+
     var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
     var stocks = stockSection ? stockSection.items : [];
-    var symbols = stocks.map(function (s) {
-      return { proName: "KRX:" + s.code, title: s.name };
+
+    if (stocks.length === 0) {
+      outer.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">관심 종목을 추가하면 실시간 시세가 표시됩니다.</p>';
+      return;
+    }
+
+    var wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.gap = "8px";
+    wrap.style.marginBottom = "10px";
+
+    stocks.forEach(function (s) {
+      var row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.justifyContent = "space-between";
+      row.style.alignItems = "center";
+      row.style.background = "var(--card-bg)";
+      row.style.border = "1px solid var(--border)";
+      row.style.borderRadius = "12px";
+      row.style.padding = "12px 16px";
+
+      var nameEl = document.createElement("div");
+      nameEl.style.fontSize = "15px";
+      nameEl.style.fontWeight = "700";
+      nameEl.textContent = s.name;
+
+      var priceEl = document.createElement("div");
+      priceEl.style.fontSize = "15px";
+      priceEl.style.fontWeight = "700";
+      priceEl.style.color = "var(--text-sub)";
+      priceEl.textContent = "로딩중...";
+      priceEl.id = "price-" + s.code;
+
+      row.appendChild(nameEl);
+      row.appendChild(priceEl);
+      wrap.appendChild(row);
     });
-    var script = document.createElement("script");
-    script.src = "https://s3.cdn.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.async = true;
-    script.text = JSON.stringify({
-      symbols: symbols,
-      colorTheme: "light",
-      isTransparent: false,
-      displayMode: "adaptive",
-      locale: "kr"
+
+    outer.appendChild(wrap);
+
+    // 야후 파이낸스 + CORS 프록시로 시세 조회
+    stocks.forEach(function (s) {
+      var symbol = s.code + ".KS";
+      var url = "https://api.allorigins.win/raw?url=" +
+        encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/" + symbol);
+
+      fetch(url)
+        .then(function (res) { return res.json(); })
+        .then(function (json) {
+          var result = json.chart && json.chart.result && json.chart.result[0];
+          var meta = result && result.meta;
+          var priceEl = document.getElementById("price-" + s.code);
+          if (!priceEl) return;
+          if (meta && typeof meta.regularMarketPrice === "number") {
+            var price = meta.regularMarketPrice;
+            var prevClose = meta.previousClose || meta.chartPreviousClose;
+            var diff = prevClose ? price - prevClose : 0;
+            var pct = prevClose ? (diff / prevClose * 100) : 0;
+            var sign = diff > 0 ? "+" : "";
+            var color = diff > 0 ? "#C9572E" : (diff < 0 ? "#3B6FB6" : "var(--text-sub)");
+            priceEl.style.color = color;
+            priceEl.textContent =
+              price.toLocaleString() + "원 (" + sign + pct.toFixed(2) + "%)";
+          } else {
+            priceEl.textContent = "조회 실패";
+          }
+        })
+        .catch(function () {
+          var priceEl = document.getElementById("price-" + s.code);
+          if (priceEl) priceEl.textContent = "조회 실패";
+        });
     });
-    container.appendChild(script);
   }
 
   // ---------- 섹션 렌더링 ----------
