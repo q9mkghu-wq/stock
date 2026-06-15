@@ -319,14 +319,30 @@
 
     outer.appendChild(wrap);
 
-    // 야후 파이낸스 + CORS 프록시로 시세 조회
+    // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
+    function fetchYahoo(symbol, proxyIdx) {
+      var target = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol;
+      var proxies = [
+        "https://corsproxy.io/?url=" + encodeURIComponent(target),
+        "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
+        "https://thingproxy.freeboard.io/fetch/" + target
+      ];
+      if (proxyIdx >= proxies.length) {
+        return Promise.reject(new Error("all proxies failed"));
+      }
+      return fetch(proxies[proxyIdx])
+        .then(function (res) {
+          if (!res.ok) throw new Error("bad status");
+          return res.json();
+        })
+        .catch(function () {
+          return fetchYahoo(symbol, proxyIdx + 1);
+        });
+    }
+
     stocks.forEach(function (s) {
       var symbol = s.code + ".KS";
-      var url = "https://api.allorigins.win/raw?url=" +
-        encodeURIComponent("https://query1.finance.yahoo.com/v8/finance/chart/" + symbol);
-
-      fetch(url)
-        .then(function (res) { return res.json(); })
+      fetchYahoo(symbol, 0)
         .then(function (json) {
           var result = json.chart && json.chart.result && json.chart.result[0];
           var meta = result && result.meta;
