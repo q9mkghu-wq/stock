@@ -280,9 +280,24 @@
     var stocks = stockSection ? stockSection.items : [];
 
     if (stocks.length === 0) {
-      outer.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">관심 종목을 추가하면 실시간 시세가 표시됩니다.</p>';
+      outer.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">관심 종목을 추가하면 실시간 시세를 불러올 수 있습니다.</p>';
       return;
     }
+
+    var refreshBtn = document.createElement("button");
+    refreshBtn.textContent = "↻ 시세 불러오기";
+    refreshBtn.style.width = "100%";
+    refreshBtn.style.padding = "12px";
+    refreshBtn.style.marginBottom = "10px";
+    refreshBtn.style.border = "1px solid var(--border)";
+    refreshBtn.style.borderRadius = "12px";
+    refreshBtn.style.background = "var(--card-bg)";
+    refreshBtn.style.color = "var(--accent)";
+    refreshBtn.style.fontWeight = "700";
+    refreshBtn.style.fontSize = "14px";
+    refreshBtn.style.cursor = "pointer";
+    refreshBtn.onclick = function () { fetchAllPrices(stocks, refreshBtn); };
+    outer.appendChild(refreshBtn);
 
     var wrap = document.createElement("div");
     wrap.style.display = "flex";
@@ -309,7 +324,7 @@
       priceEl.style.fontSize = "15px";
       priceEl.style.fontWeight = "700";
       priceEl.style.color = "var(--text-sub)";
-      priceEl.textContent = "로딩중...";
+      priceEl.textContent = "—";
       priceEl.id = "price-" + s.code;
 
       row.appendChild(nameEl);
@@ -318,31 +333,47 @@
     });
 
     outer.appendChild(wrap);
+  }
 
-    // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
-    function fetchYahoo(symbol, proxyIdx) {
-      var target = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol;
-      var proxies = [
-        "https://corsproxy.io/?url=" + encodeURIComponent(target),
-        "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
-        "https://thingproxy.freeboard.io/fetch/" + target
-      ];
-      if (proxyIdx >= proxies.length) {
-        return Promise.reject(new Error("all proxies failed"));
-      }
-      return fetch(proxies[proxyIdx])
-        .then(function (res) {
-          if (!res.ok) throw new Error("bad status");
-          return res.json();
-        })
-        .catch(function () {
-          return fetchYahoo(symbol, proxyIdx + 1);
-        });
+  // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
+  function fetchYahoo(symbol, proxyIdx) {
+    var target = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol;
+    var proxies = [
+      "https://corsproxy.io/?url=" + encodeURIComponent(target),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
+      "https://thingproxy.freeboard.io/fetch/" + target
+    ];
+    if (proxyIdx >= proxies.length) {
+      return Promise.reject(new Error("all proxies failed"));
+    }
+    return fetch(proxies[proxyIdx])
+      .then(function (res) {
+        if (!res.ok) throw new Error("bad status");
+        return res.json();
+      })
+      .catch(function () {
+        return fetchYahoo(symbol, proxyIdx + 1);
+      });
+  }
+
+  function fetchAllPrices(stocks, btn) {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "불러오는 중...";
     }
 
     stocks.forEach(function (s) {
-      var symbol = s.code + ".KS";
-      fetchYahoo(symbol, 0)
+      var priceEl = document.getElementById("price-" + s.code);
+      if (priceEl) {
+        priceEl.style.color = "var(--text-sub)";
+        priceEl.textContent = "로딩중...";
+      }
+    });
+
+    var symbol;
+    var promises = stocks.map(function (s) {
+      symbol = s.code + ".KS";
+      return fetchYahoo(symbol, 0)
         .then(function (json) {
           var result = json.chart && json.chart.result && json.chart.result[0];
           var meta = result && result.meta;
@@ -366,6 +397,13 @@
           var priceEl = document.getElementById("price-" + s.code);
           if (priceEl) priceEl.textContent = "조회 실패";
         });
+    });
+
+    Promise.all(promises).then(function () {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "↻ 시세 불러오기";
+      }
     });
   }
 
