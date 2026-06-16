@@ -564,7 +564,7 @@
   }
 
   // ---------- 섹션 렌더링 ----------
-  function makeCard(name, desc, url, onDelete) {
+  function makeCard(name, desc, url, onDelete, onMoveUp, onMoveDown, isFirst, isLast) {
     var card = document.createElement("div");
     card.className = "card";
 
@@ -579,6 +579,20 @@
     arrow.className = "arrow";
     arrow.textContent = "→";
 
+    var itemUp = document.createElement("button");
+    itemUp.className = "move-btn";
+    itemUp.textContent = "↑";
+    itemUp.title = "위로 이동";
+    itemUp.disabled = !!isFirst;
+    itemUp.onclick = function () { onMoveUp(); };
+
+    var itemDown = document.createElement("button");
+    itemDown.className = "move-btn";
+    itemDown.textContent = "↓";
+    itemDown.title = "아래로 이동";
+    itemDown.disabled = !!isLast;
+    itemDown.onclick = function () { onMoveDown(); };
+
     var del = document.createElement("button");
     del.className = "del-btn";
     del.textContent = "삭제";
@@ -586,6 +600,8 @@
 
     card.appendChild(a);
     card.appendChild(arrow);
+    card.appendChild(itemUp);
+    card.appendChild(itemDown);
     card.appendChild(del);
     return card;
   }
@@ -669,7 +685,27 @@
           saveData(data);
           renderTickerTape();
           renderSections();
-        }
+        },
+        function () {
+          if (itemIdx === 0) return;
+          var tmp = section.items[itemIdx];
+          section.items[itemIdx] = section.items[itemIdx - 1];
+          section.items[itemIdx - 1] = tmp;
+          saveData(data);
+          renderTickerTape();
+          renderSections();
+        },
+        function () {
+          if (itemIdx === section.items.length - 1) return;
+          var tmp = section.items[itemIdx];
+          section.items[itemIdx] = section.items[itemIdx + 1];
+          section.items[itemIdx + 1] = tmp;
+          saveData(data);
+          renderTickerTape();
+          renderSections();
+        },
+        itemIdx === 0,
+        itemIdx === section.items.length - 1
       ));
     });
     wrap.appendChild(list);
@@ -710,11 +746,34 @@
     var list = document.createElement("div");
     list.className = "card-list";
     section.items.forEach(function (item, itemIdx) {
-      list.appendChild(makeCard(item.name, item.desc, item.url, function () {
-        section.items.splice(itemIdx, 1);
-        saveData(data);
-        renderSections();
-      }));
+      list.appendChild(makeCard(
+        item.name,
+        item.desc,
+        item.url,
+        function () {
+          section.items.splice(itemIdx, 1);
+          saveData(data);
+          renderSections();
+        },
+        function () {
+          if (itemIdx === 0) return;
+          var tmp = section.items[itemIdx];
+          section.items[itemIdx] = section.items[itemIdx - 1];
+          section.items[itemIdx - 1] = tmp;
+          saveData(data);
+          renderSections();
+        },
+        function () {
+          if (itemIdx === section.items.length - 1) return;
+          var tmp = section.items[itemIdx];
+          section.items[itemIdx] = section.items[itemIdx + 1];
+          section.items[itemIdx + 1] = tmp;
+          saveData(data);
+          renderSections();
+        },
+        itemIdx === 0,
+        itemIdx === section.items.length - 1
+      ));
     });
     wrap.appendChild(list);
 
