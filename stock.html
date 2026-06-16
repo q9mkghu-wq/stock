@@ -55,7 +55,7 @@
     color: inherit;
     min-width: 0;
   }
-  .card-text .name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .card-text .name { font-size: 19px; font-weight: 800; margin-bottom: 2px; color: var(--text-main); }
   .card-text .desc { font-size: 12px; color: var(--text-sub); }
   .arrow { font-size: 18px; color: var(--text-sub); margin: 0 8px 0 12px; flex-shrink: 0; }
   .del-btn {
@@ -276,6 +276,8 @@
   });
 
   // ---------- 관심 종목 시세 ----------
+  var lastPrices = {}; // code -> 현재가(숫자)
+
   function renderTickerTape() {
     var outer = document.getElementById("tv-ticker-tape");
     outer.innerHTML = "";
@@ -303,6 +305,32 @@
     refreshBtn.onclick = function () { fetchAllPrices(stocks, refreshBtn); };
     outer.appendChild(refreshBtn);
 
+    var grandTotalBox = document.createElement("div");
+    grandTotalBox.style.display = "flex";
+    grandTotalBox.style.justifyContent = "space-between";
+    grandTotalBox.style.alignItems = "center";
+    grandTotalBox.style.background = "var(--accent)";
+    grandTotalBox.style.borderRadius = "12px";
+    grandTotalBox.style.padding = "14px 16px";
+    grandTotalBox.style.marginBottom = "10px";
+
+    var grandTotalLabel = document.createElement("div");
+    grandTotalLabel.textContent = "보유 종목 합계";
+    grandTotalLabel.style.fontSize = "14px";
+    grandTotalLabel.style.fontWeight = "700";
+    grandTotalLabel.style.color = "#fff";
+
+    var grandTotalValue = document.createElement("div");
+    grandTotalValue.id = "grand-total";
+    grandTotalValue.textContent = "— (시세 불러오기 필요)";
+    grandTotalValue.style.fontSize = "17px";
+    grandTotalValue.style.fontWeight = "800";
+    grandTotalValue.style.color = "#fff";
+
+    grandTotalBox.appendChild(grandTotalLabel);
+    grandTotalBox.appendChild(grandTotalValue);
+    outer.appendChild(grandTotalBox);
+
     var wrap = document.createElement("div");
     wrap.style.display = "flex";
     wrap.style.flexDirection = "column";
@@ -318,11 +346,69 @@
       row.style.border = "1px solid var(--border)";
       row.style.borderRadius = "12px";
       row.style.padding = "12px 16px";
+      row.style.gap = "10px";
+
+      // 왼쪽: 종목명 + 보유수량 입력
+      var left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.flexDirection = "column";
+      left.style.gap = "4px";
 
       var nameEl = document.createElement("div");
-      nameEl.style.fontSize = "15px";
-      nameEl.style.fontWeight = "700";
+      nameEl.style.fontSize = "16px";
+      nameEl.style.fontWeight = "800";
       nameEl.textContent = s.name;
+
+      var qtyRow = document.createElement("div");
+      qtyRow.style.display = "flex";
+      qtyRow.style.alignItems = "center";
+      qtyRow.style.gap = "6px";
+
+      var qtyLabel = document.createElement("span");
+      qtyLabel.textContent = "보유수량";
+      qtyLabel.style.fontSize = "12px";
+      qtyLabel.style.color = "var(--text-sub)";
+
+      var qtyInput = document.createElement("input");
+      qtyInput.type = "number";
+      qtyInput.min = "0";
+      qtyInput.value = s.qty || 0;
+      qtyInput.style.width = "60px";
+      qtyInput.style.padding = "4px 6px";
+      qtyInput.style.fontSize = "13px";
+      qtyInput.style.border = "1px solid var(--border)";
+      qtyInput.style.borderRadius = "6px";
+
+      var qtyBtn = document.createElement("button");
+      qtyBtn.textContent = "저장";
+      qtyBtn.style.fontSize = "12px";
+      qtyBtn.style.padding = "4px 8px";
+      qtyBtn.style.border = "1px solid var(--border)";
+      qtyBtn.style.borderRadius = "6px";
+      qtyBtn.style.background = "#fff";
+      qtyBtn.style.color = "var(--accent)";
+      qtyBtn.style.cursor = "pointer";
+      qtyBtn.onclick = function () {
+        var qty = parseInt(qtyInput.value, 10);
+        if (isNaN(qty) || qty < 0) qty = 0;
+        s.qty = qty;
+        saveData(data);
+        updateTotal(s.code);
+      };
+
+      qtyRow.appendChild(qtyLabel);
+      qtyRow.appendChild(qtyInput);
+      qtyRow.appendChild(qtyBtn);
+
+      left.appendChild(nameEl);
+      left.appendChild(qtyRow);
+
+      // 오른쪽: 현재가 + 총액
+      var right = document.createElement("div");
+      right.style.display = "flex";
+      right.style.flexDirection = "column";
+      right.style.alignItems = "flex-end";
+      right.style.gap = "2px";
 
       var priceEl = document.createElement("div");
       priceEl.style.fontSize = "15px";
@@ -331,12 +417,76 @@
       priceEl.textContent = "—";
       priceEl.id = "price-" + s.code;
 
-      row.appendChild(nameEl);
-      row.appendChild(priceEl);
+      var totalEl = document.createElement("div");
+      totalEl.style.fontSize = "13px";
+      totalEl.style.fontWeight = "700";
+      totalEl.style.color = "var(--accent)";
+      totalEl.textContent = (s.qty ? "총액 —" : "");
+      totalEl.id = "total-" + s.code;
+
+      right.appendChild(priceEl);
+      right.appendChild(totalEl);
+
+      row.appendChild(left);
+      row.appendChild(right);
       wrap.appendChild(row);
     });
 
     outer.appendChild(wrap);
+    updateGrandTotal();
+  }
+
+  function updateTotal(code) {
+    var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
+    var stock = stockSection.items.filter(function (s) { return s.code === code; })[0];
+    var totalEl = document.getElementById("total-" + code);
+    if (!stock || !totalEl) return;
+
+    var price = lastPrices[code];
+    var qty = stock.qty || 0;
+
+    if (qty === 0) {
+      totalEl.textContent = "";
+    } else if (price == null) {
+      totalEl.textContent = "총액 — (시세 불러오기 필요)";
+    } else {
+      totalEl.textContent = "총액 " + (price * qty).toLocaleString() + "원";
+    }
+
+    updateGrandTotal();
+  }
+
+  function updateGrandTotal() {
+    var grandTotalValue = document.getElementById("grand-total");
+    if (!grandTotalValue) return;
+
+    var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
+    var stocks = stockSection ? stockSection.items : [];
+
+    var sum = 0;
+    var hasQty = false;
+    var allPricesReady = true;
+
+    stocks.forEach(function (s) {
+      var qty = s.qty || 0;
+      if (qty > 0) {
+        hasQty = true;
+        var price = lastPrices[s.code];
+        if (price == null) {
+          allPricesReady = false;
+        } else {
+          sum += price * qty;
+        }
+      }
+    });
+
+    if (!hasQty) {
+      grandTotalValue.textContent = "보유 수량을 입력해주세요";
+    } else if (!allPricesReady) {
+      grandTotalValue.textContent = "— (시세 불러오기 필요)";
+    } else {
+      grandTotalValue.textContent = sum.toLocaleString() + "원";
+    }
   }
 
   // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
@@ -393,6 +543,8 @@
             priceEl.style.color = color;
             priceEl.textContent =
               price.toLocaleString() + "원 (" + sign + pct.toFixed(2) + "%)";
+            lastPrices[s.code] = price;
+            updateTotal(s.code);
           } else {
             priceEl.textContent = "조회 실패";
           }
