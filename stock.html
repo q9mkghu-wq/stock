@@ -403,8 +403,8 @@
       row.style.display = "flex";
       row.style.justifyContent = "space-between";
       row.style.alignItems = "center";
-      row.style.background = "var(--card-bg)";
-      row.style.border = "1px solid var(--border)";
+      row.style.background = (s.qty && s.qty > 0) ? "#FCE9E0" : "var(--card-bg)";
+      row.style.border = (s.qty && s.qty > 0) ? "1px solid #E8B79A" : "1px solid var(--border)";
       row.style.borderRadius = "12px";
       row.style.padding = "12px 16px";
       row.style.gap = "10px";
@@ -454,7 +454,7 @@
         if (isNaN(qty) || qty < 0) qty = 0;
         s.qty = qty;
         saveData(data);
-        updateTotal(s.code);
+        renderTickerTape();
       };
 
       qtyRow.appendChild(qtyLabel);
@@ -474,15 +474,22 @@
       var priceEl = document.createElement("div");
       priceEl.style.fontSize = "15px";
       priceEl.style.fontWeight = "700";
-      priceEl.style.color = "var(--text-sub)";
-      priceEl.textContent = "—";
       priceEl.id = "price-" + s.code;
+
+      var cachedPrice = lastPrices[s.code];
+      if (cachedPrice != null) {
+        priceEl.style.color = "var(--text-sub)";
+        priceEl.textContent = cachedPrice.toLocaleString() + "원";
+      } else {
+        priceEl.style.color = "var(--text-sub)";
+        priceEl.textContent = "—";
+      }
 
       var totalEl = document.createElement("div");
       totalEl.style.fontSize = "13px";
       totalEl.style.fontWeight = "700";
       totalEl.style.color = "var(--accent)";
-      totalEl.textContent = (s.qty ? "총액 —" : "");
+      totalEl.textContent = "";
       totalEl.id = "total-" + s.code;
 
       right.appendChild(priceEl);
@@ -494,6 +501,7 @@
     });
 
     outer.appendChild(wrap);
+    stocks.forEach(function (s) { updateTotal(s.code); });
     updateGrandTotal();
   }
 
