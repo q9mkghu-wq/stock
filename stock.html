@@ -926,6 +926,18 @@
       textEl.className = "note-text";
       textEl.textContent = item.text;
 
+      var editArea = document.createElement("textarea");
+      editArea.value = item.text;
+      editArea.style.display = "none";
+      editArea.style.padding = "10px 12px";
+      editArea.style.border = "1px solid var(--border)";
+      editArea.style.borderRadius = "8px";
+      editArea.style.fontSize = "16px";
+      editArea.style.width = "100%";
+      editArea.style.minHeight = "70px";
+      editArea.style.fontFamily = "inherit";
+      editArea.style.resize = "vertical";
+
       var actions = document.createElement("div");
       actions.className = "note-actions";
 
@@ -955,6 +967,28 @@
         renderSections();
       };
 
+      var editBtn = document.createElement("button");
+      editBtn.className = "del-btn";
+      editBtn.textContent = "수정";
+      editBtn.onclick = function () {
+        var editing = editArea.style.display !== "none";
+        if (!editing) {
+          textEl.style.display = "none";
+          editArea.style.display = "block";
+          editArea.focus();
+          editBtn.textContent = "저장";
+        } else {
+          var newText = editArea.value.trim();
+          if (!newText) {
+            alert("내용을 입력해주세요.");
+            return;
+          }
+          item.text = newText;
+          saveData(data);
+          renderSections();
+        }
+      };
+
       var del = document.createElement("button");
       del.className = "del-btn";
       del.textContent = "삭제";
@@ -966,9 +1000,11 @@
 
       actions.appendChild(upBtn);
       actions.appendChild(downBtn);
+      actions.appendChild(editBtn);
       actions.appendChild(del);
 
       card.appendChild(textEl);
+      card.appendChild(editArea);
       card.appendChild(actions);
       list.appendChild(card);
     });
