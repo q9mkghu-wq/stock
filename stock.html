@@ -131,6 +131,37 @@
     cursor: pointer;
   }
   .add-form .hint { font-size: 12px; color: var(--text-sub); }
+  .note-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .note-card .note-text {
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-main);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .note-card .note-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .note-form textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    width: 100%;
+    min-height: 70px;
+    font-family: inherit;
+    resize: vertical;
+  }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 </style>
 </head>
@@ -230,6 +261,14 @@
           { name: "삼프로TV", desc: "경제·투자 전반에 대한 강의식 콘텐츠, 매일 라이브", url: "https://www.youtube.com/@3protv" },
           { name: "박곰희TV", desc: "투자 개념부터 차근차근, 입문자에 적합", url: "https://www.youtube.com/@bghfinance" },
           { name: "김경필의 머니트레이닝(필쌤TV)", desc: "소비·자산관리 등 돈 관리 기초 공부", url: "https://www.youtube.com/results?search_query=%ED%95%84%EC%8C%A4TV+%EA%B0%80%EC%A0%95%EA%B2%BD%EC%A0%9C" }
+        ]
+      },
+      {
+        id: "memo",
+        type: "notes",
+        title: "메모장",
+        items: [
+          { text: "여기에 공부해야 할 내용, 기억할 점을 적어두세요." }
         ]
       }
     ]
@@ -623,6 +662,8 @@
     data.sections.forEach(function (section, idx) {
       if (section.type === "stocks") {
         root.appendChild(buildStockSection(section, idx));
+      } else if (section.type === "notes") {
+        root.appendChild(buildNoteSection(section, idx));
       } else {
         root.appendChild(buildLinkSection(section, idx));
       }
@@ -797,6 +838,96 @@
       }
       if (!/^https?:\/\//.test(url)) url = "https://" + url;
       section.items.push({ name: name, desc: desc, url: url });
+      saveData(data);
+      renderSections();
+    };
+
+    return wrap;
+  }
+
+  function buildNoteSection(section, idx) {
+    var wrap = document.createElement("div");
+    wrap.className = "section";
+
+    var titleParts = buildSectionTitle(section.title, idx, "+ 메모 추가");
+    wrap.appendChild(titleParts.titleRow);
+
+    var list = document.createElement("div");
+    list.className = "card-list";
+
+    section.items.forEach(function (item, itemIdx) {
+      var card = document.createElement("div");
+      card.className = "note-card";
+
+      var textEl = document.createElement("div");
+      textEl.className = "note-text";
+      textEl.textContent = item.text;
+
+      var actions = document.createElement("div");
+      actions.className = "note-actions";
+
+      var upBtn = document.createElement("button");
+      upBtn.className = "move-btn";
+      upBtn.textContent = "↑";
+      upBtn.disabled = itemIdx === 0;
+      upBtn.onclick = function () {
+        if (itemIdx === 0) return;
+        var tmp = section.items[itemIdx];
+        section.items[itemIdx] = section.items[itemIdx - 1];
+        section.items[itemIdx - 1] = tmp;
+        saveData(data);
+        renderSections();
+      };
+
+      var downBtn = document.createElement("button");
+      downBtn.className = "move-btn";
+      downBtn.textContent = "↓";
+      downBtn.disabled = itemIdx === section.items.length - 1;
+      downBtn.onclick = function () {
+        if (itemIdx === section.items.length - 1) return;
+        var tmp = section.items[itemIdx];
+        section.items[itemIdx] = section.items[itemIdx + 1];
+        section.items[itemIdx + 1] = tmp;
+        saveData(data);
+        renderSections();
+      };
+
+      var del = document.createElement("button");
+      del.className = "del-btn";
+      del.textContent = "삭제";
+      del.onclick = function () {
+        section.items.splice(itemIdx, 1);
+        saveData(data);
+        renderSections();
+      };
+
+      actions.appendChild(upBtn);
+      actions.appendChild(downBtn);
+      actions.appendChild(del);
+
+      card.appendChild(textEl);
+      card.appendChild(actions);
+      list.appendChild(card);
+    });
+
+    wrap.appendChild(list);
+
+    var form = document.createElement("div");
+    form.className = "add-form note-form";
+    form.innerHTML =
+      '<textarea placeholder="메모할 내용을 입력하세요"></textarea>' +
+      '<button type="button" class="f-submit">추가</button>';
+    wrap.appendChild(form);
+
+    titleParts.toggleBtn.onclick = function () { form.classList.toggle("open"); };
+    form.querySelector(".f-submit").onclick = function () {
+      var textarea = form.querySelector("textarea");
+      var text = textarea.value.trim();
+      if (!text) {
+        alert("내용을 입력해주세요.");
+        return;
+      }
+      section.items.push({ text: text });
       saveData(data);
       renderSections();
     };
