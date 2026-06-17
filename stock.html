@@ -30,6 +30,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     font-size: 21px;
     font-weight: 700;
     color: var(--accent);
@@ -82,6 +84,7 @@
   .section-actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 6px;
   }
   .move-btn {
@@ -689,7 +692,25 @@
     });
   }
 
-  function buildSectionTitle(title, idx, toggleLabel) {
+  function deleteSection(idx) {
+    var section = data.sections[idx];
+    var ok = confirm('"' + section.title + '" 섹션을 삭제하시겠습니까?\n안의 항목들도 모두 사라집니다.');
+    if (!ok) return;
+    data.sections.splice(idx, 1);
+    saveData(data);
+    renderSections();
+  }
+
+  function renameSection(idx) {
+    var section = data.sections[idx];
+    var newTitle = prompt("새 섹션 이름을 입력하세요", section.title);
+    if (!newTitle || !newTitle.trim()) return;
+    section.title = newTitle.trim();
+    saveData(data);
+    renderSections();
+  }
+
+  function buildSectionTitle(title, idx, toggleLabel, allowDelete) {
     var titleRow = document.createElement("div");
     titleRow.className = "section-title";
 
@@ -714,12 +735,29 @@
     downBtn.disabled = idx === data.sections.length - 1;
     downBtn.onclick = function () { moveSection(idx, 1); };
 
+    var editBtn = document.createElement("button");
+    editBtn.className = "move-btn";
+    editBtn.textContent = "✎";
+    editBtn.title = "섹션 이름 수정";
+    editBtn.onclick = function () { renameSection(idx); };
+
     var toggleBtn = document.createElement("button");
     toggleBtn.className = "add-toggle";
     toggleBtn.textContent = toggleLabel;
 
     actions.appendChild(upBtn);
     actions.appendChild(downBtn);
+    actions.appendChild(editBtn);
+
+    if (allowDelete) {
+      var delSectionBtn = document.createElement("button");
+      delSectionBtn.className = "move-btn";
+      delSectionBtn.textContent = "✕";
+      delSectionBtn.title = "섹션 삭제";
+      delSectionBtn.onclick = function () { deleteSection(idx); };
+      actions.appendChild(delSectionBtn);
+    }
+
     actions.appendChild(toggleBtn);
     titleRow.appendChild(actions);
 
@@ -732,7 +770,7 @@
 
     if (!section.items) section.items = [];
 
-    var titleParts = buildSectionTitle(section.title, idx, "+ 종목 추가");
+    var titleParts = buildSectionTitle(section.title, idx, "+ 종목 추가", false);
     wrap.appendChild(titleParts.titleRow);
 
     var list = document.createElement("div");
@@ -804,7 +842,7 @@
 
     if (!section.items) section.items = [];
 
-    var titleParts = buildSectionTitle(section.title, idx, "+ 추가");
+    var titleParts = buildSectionTitle(section.title, idx, "+ 추가", true);
     wrap.appendChild(titleParts.titleRow);
 
     var list = document.createElement("div");
@@ -874,7 +912,7 @@
 
     if (!section.items) section.items = [];
 
-    var titleParts = buildSectionTitle(section.title, idx, "+ 메모 추가");
+    var titleParts = buildSectionTitle(section.title, idx, "+ 메모 추가", true);
     wrap.appendChild(titleParts.titleRow);
 
     var list = document.createElement("div");
