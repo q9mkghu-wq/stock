@@ -341,7 +341,7 @@
     outer.innerHTML = "";
 
     var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
-    var stocks = stockSection ? stockSection.items : [];
+    var stocks = (stockSection && stockSection.items) ? stockSection.items : [];
 
     if (stocks.length === 0) {
       outer.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">관심 종목을 추가하면 실시간 시세를 불러올 수 있습니다.</p>';
@@ -496,7 +496,7 @@
 
   function updateTotal(code) {
     var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
-    var stock = stockSection.items.filter(function (s) { return s.code === code; })[0];
+    var stock = (stockSection && stockSection.items ? stockSection.items : []).filter(function (s) { return s.code === code; })[0];
     var totalEl = document.getElementById("total-" + code);
     if (!stock || !totalEl) return;
 
@@ -519,7 +519,7 @@
     if (!grandTotalValue) return;
 
     var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
-    var stocks = stockSection ? stockSection.items : [];
+    var stocks = (stockSection && stockSection.items) ? stockSection.items : [];
 
     var sum = 0;
     var hasQty = false;
@@ -730,6 +730,8 @@
     var wrap = document.createElement("div");
     wrap.className = "section";
 
+    if (!section.items) section.items = [];
+
     var titleParts = buildSectionTitle(section.title, idx, "+ 종목 추가");
     wrap.appendChild(titleParts.titleRow);
 
@@ -800,6 +802,8 @@
     var wrap = document.createElement("div");
     wrap.className = "section";
 
+    if (!section.items) section.items = [];
+
     var titleParts = buildSectionTitle(section.title, idx, "+ 추가");
     wrap.appendChild(titleParts.titleRow);
 
@@ -867,6 +871,8 @@
   function buildNoteSection(section, idx) {
     var wrap = document.createElement("div");
     wrap.className = "section";
+
+    if (!section.items) section.items = [];
 
     var titleParts = buildSectionTitle(section.title, idx, "+ 메모 추가");
     wrap.appendChild(titleParts.titleRow);
