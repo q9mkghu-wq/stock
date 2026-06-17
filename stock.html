@@ -297,6 +297,7 @@
 
   var data = JSON.parse(JSON.stringify(DEFAULT_DATA));
   var isFirstLoad = true;
+  var lastPrices = {}; // code -> 현재가(숫자)
 
   function saveData(d) {
     dbRef.set(d);
@@ -337,8 +338,6 @@
   });
 
   // ---------- 관심 종목 시세 ----------
-  var lastPrices = {}; // code -> 현재가(숫자)
-
   function renderTickerTape() {
     var outer = document.getElementById("tv-ticker-tape");
     outer.innerHTML = "";
