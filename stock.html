@@ -179,6 +179,10 @@
 
 <div id="sections"></div>
 
+<div class="section">
+  <button id="add-section-btn" style="width:100%; padding:14px; border:1.5px dashed var(--border); border-radius:12px; background:none; color:var(--accent); font-weight:700; font-size:15px; cursor:pointer;">+ 새 섹션 추가</button>
+</div>
+
 <footer>
   즐겨찾기에 추가해두고 운전 시작 전 / 쉬는 시간에 확인하세요.<br>
   여러 기기에서 실시간으로 동기화됩니다.
@@ -298,6 +302,21 @@
   // 즉시 1차 렌더링 (Firebase 응답 전에도 화면이 비어있지 않도록)
   renderTickerTape();
   renderSections();
+
+  document.getElementById("add-section-btn").addEventListener("click", function () {
+    var title = prompt("새 섹션 이름을 입력하세요 (예: 메모장, 관심 산업 뉴스 등)");
+    if (!title || !title.trim()) return;
+
+    var isNote = confirm("메모장 형태로 만들까요?\n(확인 = 메모장 / 취소 = 링크 모음)");
+
+    var newSection = isNote
+      ? { id: "section_" + Date.now(), type: "notes", title: title.trim(), items: [] }
+      : { id: "section_" + Date.now(), type: "links", title: title.trim(), items: [] };
+
+    data.sections.push(newSection);
+    saveData(data);
+    renderSections();
+  });
 
   // 실시간 동기화: 다른 기기에서 변경되면 자동으로 다시 그림
   dbRef.on("value", function (snapshot) {
