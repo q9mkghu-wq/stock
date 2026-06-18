@@ -558,9 +558,9 @@
   }
 
   // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
-  function fetchNaverPrice(code, proxyIdx) {
+  function fetchDaumPrice(code, proxyIdx) {
     var cacheBuster = "_t=" + Date.now();
-    var target = "https://polling.finance.naver.com/api/realtime/domestic/stock/" + code + "?" + cacheBuster;
+    var target = "https://finance.daum.net/api/quotes/A" + code + "?" + cacheBuster;
     var proxies = [
       "https://corsproxy.io/?url=" + encodeURIComponent(target),
       "https://api.allorigins.win/raw?url=" + encodeURIComponent(target) + "&" + cacheBuster,
@@ -575,7 +575,7 @@
         return res.json();
       })
       .catch(function () {
-        return fetchNaverPrice(code, proxyIdx + 1);
+        return fetchDaumPrice(code, proxyIdx + 1);
       });
   }
 
@@ -594,24 +594,20 @@
     });
 
     var promises = stocks.map(function (s) {
-      return fetchNaverPrice(s.code, 0)
+      return fetchDaumPrice(s.code, 0)
         .then(function (json) {
           var priceEl = document.getElementById("price-" + s.code);
           if (!priceEl) return;
-          var item =
-            json.datas && json.datas[0] ? json.datas[0] :
-            (json.result && json.result.areas && json.result.areas[0] &&
-             json.result.areas[0].datas && json.result.areas[0].datas[0]);
 
-          var price = item && (item.closePrice || item.cp);
-          var changeRate = item && (item.fluctuationsRatio || item.cr);
+          // 다음 금융 API 응답 구조: tradePrice(현재가), changeRate(등락율, 소수)
+          var price = json.tradePrice;
+          var changeRate = json.changeRate;
 
-          // 문자열로 오는 경우(쉼표 포함) 숫자로 변환
           if (typeof price === "string") price = parseFloat(price.replace(/,/g, ""));
           if (typeof changeRate === "string") changeRate = parseFloat(changeRate);
 
           if (typeof price === "number" && !isNaN(price)) {
-            var pct = (typeof changeRate === "number" && !isNaN(changeRate)) ? changeRate : 0;
+            var pct = (typeof changeRate === "number" && !isNaN(changeRate)) ? changeRate * 100 : 0;
             var sign = pct > 0 ? "+" : "";
             var color = pct > 0 ? "#C9572E" : (pct < 0 ? "#3B6FB6" : "var(--text-sub)");
             priceEl.style.color = color;
