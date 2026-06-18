@@ -561,18 +561,31 @@
   function fetchDaumPrice(code, proxyIdx) {
     var cacheBuster = "_t=" + Date.now();
     var target = "https://finance.daum.net/api/quotes/A" + code + "?" + cacheBuster;
+
     var proxies = [
-      "https://corsproxy.io/?url=" + encodeURIComponent(target),
-      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target) + "&" + cacheBuster,
-      "https://thingproxy.freeboard.io/fetch/" + target
+      { url: "https://corsproxy.io/?url=" + encodeURIComponent(target), mode: "raw" },
+      { url: "https://api.allorigins.win/get?url=" + encodeURIComponent(target) + "&" + cacheBuster, mode: "wrapped" },
+      { url: "https://api.allorigins.win/raw?url=" + encodeURIComponent(target) + "&" + cacheBuster, mode: "raw" }
     ];
+
     if (proxyIdx >= proxies.length) {
       return Promise.reject(new Error("all proxies failed"));
     }
-    return fetch(proxies[proxyIdx], { cache: "no-store" })
+
+    var proxy = proxies[proxyIdx];
+
+    return fetch(proxy.url, { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("bad status");
         return res.json();
+      })
+      .then(function (json) {
+        if (proxy.mode === "wrapped") {
+          // allorigins /get 은 { contents: "원본 JSON 문자열", status: {...} } 형태
+          if (!json.contents) throw new Error("no contents");
+          return JSON.parse(json.contents);
+        }
+        return json;
       })
       .catch(function () {
         return fetchDaumPrice(code, proxyIdx + 1);
