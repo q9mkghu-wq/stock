@@ -558,37 +558,23 @@
   }
 
   // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
-  function fetchDaumPrice(code, proxyIdx) {
-    var cacheBuster = "_t=" + Date.now();
-    var target = "https://finance.daum.net/api/quotes/A" + code + "?" + cacheBuster;
-
+  function fetchYahoo(symbol, proxyIdx) {
+    var target = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol;
     var proxies = [
-      { url: "https://corsproxy.io/?url=" + encodeURIComponent(target), mode: "raw" },
-      { url: "https://api.allorigins.win/get?url=" + encodeURIComponent(target) + "&" + cacheBuster, mode: "wrapped" },
-      { url: "https://api.allorigins.win/raw?url=" + encodeURIComponent(target) + "&" + cacheBuster, mode: "raw" }
+      "https://corsproxy.io/?url=" + encodeURIComponent(target),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
+      "https://thingproxy.freeboard.io/fetch/" + target
     ];
-
     if (proxyIdx >= proxies.length) {
       return Promise.reject(new Error("all proxies failed"));
     }
-
-    var proxy = proxies[proxyIdx];
-
-    return fetch(proxy.url, { cache: "no-store" })
+    return fetch(proxies[proxyIdx])
       .then(function (res) {
         if (!res.ok) throw new Error("bad status");
         return res.json();
       })
-      .then(function (json) {
-        if (proxy.mode === "wrapped") {
-          // allorigins /get 은 { contents: "원본 JSON 문자열", status: {...} } 형태
-          if (!json.contents) throw new Error("no contents");
-          return JSON.parse(json.contents);
-        }
-        return json;
-      })
       .catch(function () {
-        return fetchDaumPrice(code, proxyIdx + 1);
+        return fetchYahoo(symbol, proxyIdx + 1);
       });
   }
 
@@ -606,23 +592,22 @@
       }
     });
 
+    var symbol;
     var promises = stocks.map(function (s) {
-      return fetchDaumPrice(s.code, 0)
+      symbol = s.code + ".KS";
+      return fetchYahoo(symbol, 0)
         .then(function (json) {
+          var result = json.chart && json.chart.result && json.chart.result[0];
+          var meta = result && result.meta;
           var priceEl = document.getElementById("price-" + s.code);
           if (!priceEl) return;
-
-          // 다음 금융 API 응답 구조: tradePrice(현재가), changeRate(등락율, 소수)
-          var price = json.tradePrice;
-          var changeRate = json.changeRate;
-
-          if (typeof price === "string") price = parseFloat(price.replace(/,/g, ""));
-          if (typeof changeRate === "string") changeRate = parseFloat(changeRate);
-
-          if (typeof price === "number" && !isNaN(price)) {
-            var pct = (typeof changeRate === "number" && !isNaN(changeRate)) ? changeRate * 100 : 0;
-            var sign = pct > 0 ? "+" : "";
-            var color = pct > 0 ? "#C9572E" : (pct < 0 ? "#3B6FB6" : "var(--text-sub)");
+          if (meta && typeof meta.regularMarketPrice === "number") {
+            var price = meta.regularMarketPrice;
+            var prevClose = meta.previousClose || meta.chartPreviousClose;
+            var diff = prevClose ? price - prevClose : 0;
+            var pct = prevClose ? (diff / prevClose * 100) : 0;
+            var sign = diff > 0 ? "+" : "";
+            var color = diff > 0 ? "#C9572E" : (diff < 0 ? "#3B6FB6" : "var(--text-sub)");
             priceEl.style.color = color;
             priceEl.textContent =
               price.toLocaleString() + "원 (" + sign + pct.toFixed(2) + "%)";
