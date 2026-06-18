@@ -558,23 +558,24 @@
   }
 
   // 야후 파이낸스 + CORS 프록시(여러 개 순차 시도)로 시세 조회
-  function fetchYahoo(symbol, proxyIdx) {
-    var target = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol;
+  function fetchNaverPrice(code, proxyIdx) {
+    var cacheBuster = "_t=" + Date.now();
+    var target = "https://polling.finance.naver.com/api/realtime/domestic/stock/" + code + "?" + cacheBuster;
     var proxies = [
       "https://corsproxy.io/?url=" + encodeURIComponent(target),
-      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target) + "&" + cacheBuster,
       "https://thingproxy.freeboard.io/fetch/" + target
     ];
     if (proxyIdx >= proxies.length) {
       return Promise.reject(new Error("all proxies failed"));
     }
-    return fetch(proxies[proxyIdx])
+    return fetch(proxies[proxyIdx], { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("bad status");
         return res.json();
       })
       .catch(function () {
-        return fetchYahoo(symbol, proxyIdx + 1);
+        return fetchNaverPrice(code, proxyIdx + 1);
       });
   }
 
@@ -592,22 +593,27 @@
       }
     });
 
-    var symbol;
     var promises = stocks.map(function (s) {
-      symbol = s.code + ".KS";
-      return fetchYahoo(symbol, 0)
+      return fetchNaverPrice(s.code, 0)
         .then(function (json) {
-          var result = json.chart && json.chart.result && json.chart.result[0];
-          var meta = result && result.meta;
           var priceEl = document.getElementById("price-" + s.code);
           if (!priceEl) return;
-          if (meta && typeof meta.regularMarketPrice === "number") {
-            var price = meta.regularMarketPrice;
-            var prevClose = meta.previousClose || meta.chartPreviousClose;
-            var diff = prevClose ? price - prevClose : 0;
-            var pct = prevClose ? (diff / prevClose * 100) : 0;
-            var sign = diff > 0 ? "+" : "";
-            var color = diff > 0 ? "#C9572E" : (diff < 0 ? "#3B6FB6" : "var(--text-sub)");
+          var item =
+            json.datas && json.datas[0] ? json.datas[0] :
+            (json.result && json.result.areas && json.result.areas[0] &&
+             json.result.areas[0].datas && json.result.areas[0].datas[0]);
+
+          var price = item && (item.closePrice || item.cp);
+          var changeRate = item && (item.fluctuationsRatio || item.cr);
+
+          // 문자열로 오는 경우(쉼표 포함) 숫자로 변환
+          if (typeof price === "string") price = parseFloat(price.replace(/,/g, ""));
+          if (typeof changeRate === "string") changeRate = parseFloat(changeRate);
+
+          if (typeof price === "number" && !isNaN(price)) {
+            var pct = (typeof changeRate === "number" && !isNaN(changeRate)) ? changeRate : 0;
+            var sign = pct > 0 ? "+" : "";
+            var color = pct > 0 ? "#C9572E" : (pct < 0 ? "#3B6FB6" : "var(--text-sub)");
             priceEl.style.color = color;
             priceEl.textContent =
               price.toLocaleString() + "원 (" + sign + pct.toFixed(2) + "%)";
