@@ -29,6 +29,36 @@
     width: max-content;
     min-width: 100vw;
   }
+
+  /* ===== 상단 차트 바 ===== */
+  .chart-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    width: 100vw;
+  }
+  .chart-item {
+    flex: 0 0 280px;
+    border-right: 1px solid var(--border);
+    padding: 8px 12px 4px;
+  }
+  .chart-item:last-child { border-right: none; }
+  .chart-item-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-sub);
+    margin-bottom: 4px;
+  }
+  .page-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
   /* 왼쪽: 주식 허브 */
   .hub-panel {
     flex: 0 0 480px;
@@ -403,6 +433,82 @@
 </head>
 <body>
 
+<!-- ===== 상단 차트 바 ===== -->
+<div class="chart-bar">
+
+  <div class="chart-item">
+    <div class="chart-item-label">🇰🇷 코스피</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"KRX:KOSPI","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+  <div class="chart-item">
+    <div class="chart-item-label">🇰🇷 코스닥</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"KRX:KOSDAQ","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+  <div class="chart-item">
+    <div class="chart-item-label">🇺🇸 나스닥</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"NASDAQ:COMP","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+  <div class="chart-item">
+    <div class="chart-item-label">🇺🇸 S&P 500</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"SP:SPX","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+  <div class="chart-item">
+    <div class="chart-item-label">🇺🇸 다우존스</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"DJ:DJI","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+  <div class="chart-item">
+    <div class="chart-item-label">💱 원/달러 환율</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"FX_IDC:USDKRW","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+  <div class="chart-item">
+    <div class="chart-item-label">🏭 필라델피아 반도체(SOX)</div>
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
+      {"symbol":"NASDAQ:SOX","width":"100%","height":"100","locale":"kr","dateRange":"1D","colorTheme":"light","isTransparent":true,"autosize":false,"largeChartUrl":""}
+      </script>
+    </div>
+  </div>
+
+</div><!-- /chart-bar -->
+
+<div class="page-wrap">
 <div class="app-layout">
 
 <!-- ===== 왼쪽: 주식 허브 ===== -->
@@ -506,6 +612,7 @@
 </div><!-- /right-area -->
 
 </div><!-- /app-layout -->
+</div><!-- /page-wrap -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
