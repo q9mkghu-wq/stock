@@ -1492,11 +1492,21 @@
   }
 
   function updateCharts(range) {
-    var iframes = document.querySelectorAll(".chart-iframe");
-    iframes.forEach(function (iframe, idx) {
-      if (chartSymbols[idx]) {
-        iframe.src = buildChartSrc(chartSymbols[idx], range);
-      }
+    var items = document.querySelectorAll(".chart-item");
+    items.forEach(function (item, idx) {
+      if (!chartSymbols[idx]) return;
+      // 기존 iframe 제거 후 새로 생성 (src 변경만으로는 TradingView 위젯이 갱신 안 됨)
+      var oldIframe = item.querySelector("iframe");
+      if (oldIframe) item.removeChild(oldIframe);
+      var newIframe = document.createElement("iframe");
+      newIframe.src = buildChartSrc(chartSymbols[idx], range);
+      newIframe.width = "100%";
+      newIframe.height = "220";
+      newIframe.frameBorder = "0";
+      newIframe.scrolling = "no";
+      newIframe.style.display = "block";
+      newIframe.className = "chart-iframe";
+      item.appendChild(newIframe);
     });
   }
 
