@@ -1358,6 +1358,24 @@
   }
 
   // ===== 패널 순서 변경 JS =====
+  var panelOrderRef = db.ref("panelOrder");
+
+  function savePanelOrder() {
+    var container = document.getElementById("panels-container");
+    var panels = Array.from(container.querySelectorAll(".slide-panel"));
+    var order = panels.map(function (p) { return p.id.replace("slide-", ""); });
+    panelOrderRef.set(order);
+  }
+
+  function applyPanelOrder(order) {
+    var container = document.getElementById("panels-container");
+    order.forEach(function (key) {
+      var panel = document.getElementById("slide-" + key);
+      if (panel) container.appendChild(panel);
+    });
+    updatePanelBtns();
+  }
+
   function updatePanelBtns() {
     var container = document.getElementById("panels-container");
     var panels = container.querySelectorAll(".slide-panel");
@@ -1387,9 +1405,18 @@
       container.insertBefore(panels[idx], panels[newIdx]);
     }
     updatePanelBtns();
+    savePanelOrder();
   });
 
-  updatePanelBtns();
+  // Firebase에서 저장된 순서 불러오기
+  panelOrderRef.once("value", function (snap) {
+    var val = snap.val();
+    if (val && Array.isArray(val) && val.length === 3) {
+      applyPanelOrder(val);
+    } else {
+      updatePanelBtns();
+    }
+  });
 
   // ===== 링크 보관함 JS =====
   var lbLinksRef = db.ref("linkbox/links");
