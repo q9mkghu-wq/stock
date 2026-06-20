@@ -18,9 +18,27 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     background: var(--bg);
     color: var(--text-main);
+  }
+  .app-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    min-height: 100vh;
+  }
+  /* 왼쪽: 주식 허브 */
+  .hub-panel {
+    flex: 0 0 480px;
+    min-width: 320px;
     padding: 24px 16px 60px;
-    max-width: 480px;
-    margin: 0 auto;
+    border-right: 2px solid var(--border);
+    min-height: 100vh;
+  }
+  /* 오른쪽: 링크 보관함 */
+  .linkbox-panel {
+    flex: 1;
+    min-width: 320px;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
   }
   header { margin-bottom: 28px; }
   header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
@@ -166,9 +184,89 @@
     resize: vertical;
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
+
+  /* ===== 링크 보관함 ===== */
+  .linkbox-panel header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .linkbox-panel header p { font-size: 14px; color: var(--text-sub); margin-bottom: 20px; }
+  .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-box input {
+    flex: 1; padding: 10px 14px;
+    border: 1px solid var(--border); border-radius: 10px;
+    font-size: 14px; background: var(--card-bg);
+  }
+  .category-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--card-bg);
+    font-size: 13px; font-weight: 600; color: var(--text-sub); cursor: pointer;
+  }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .add-category-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px dashed var(--border); background: none;
+    font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer;
+  }
+  .link-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .link-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .link-card-title {
+    font-size: 16px; font-weight: 800; color: var(--text-main);
+    margin-bottom: 4px; text-decoration: none; display: block;
+  }
+  .link-card-title:hover { color: var(--accent); }
+  .link-card-url {
+    font-size: 12px; color: var(--text-sub); margin-bottom: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px;
+  }
+  .link-card-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .link-card-category {
+    font-size: 11px; font-weight: 700;
+    background: #FCE9E0; color: var(--accent); border-radius: 6px; padding: 2px 8px;
+  }
+  .link-card-memo { font-size: 12px; color: var(--text-sub); }
+  .link-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    width: 28px; height: 28px; font-size: 13px; cursor: pointer; color: var(--text-sub);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .lb-add-form {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 16px;
+    display: none; flex-direction: column; gap: 10px;
+  }
+  .lb-add-form.open { display: flex; }
+  .lb-add-form input, .lb-add-form textarea, .lb-add-form select {
+    padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: inherit; width: 100%;
+  }
+  .lb-add-form textarea { min-height: 60px; resize: vertical; }
+  .lb-form-btns { display: flex; gap: 8px; }
+  .btn-primary {
+    flex: 1; padding: 10px; background: var(--accent); color: #fff;
+    border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .btn-secondary {
+    padding: 10px 16px; background: none; color: var(--text-sub);
+    border: 1px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer;
+  }
+  .lb-fab {
+    width: 100%; padding: 14px; border: 1.5px dashed var(--border);
+    border-radius: 12px; background: none; color: var(--accent);
+    font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 10px;
+  }
+  .empty-msg { text-align: center; color: var(--text-sub); font-size: 14px; padding: 40px 0; }
 </style>
 </head>
 <body>
+
+<div class="app-layout">
+
+<!-- ===== 왼쪽: 주식 허브 ===== -->
+<div class="hub-panel">
 
 <header>
   <h1>주식 정보 허브</h1>
@@ -190,6 +288,41 @@
   즐겨찾기에 추가해두고 운전 시작 전 / 쉬는 시간에 확인하세요.<br>
   여러 기기에서 실시간으로 동기화됩니다.
 </footer>
+
+</div><!-- /hub-panel -->
+
+<!-- ===== 오른쪽: 링크 보관함 ===== -->
+<div class="linkbox-panel">
+
+<header>
+  <h1>🔖 링크 보관함</h1>
+  <p>유용한 링크를 분류별로 저장하고 관리하세요.</p>
+</header>
+
+<div class="search-box">
+  <input type="text" id="lb-search" placeholder="제목, URL, 메모 검색...">
+</div>
+
+<div class="category-tabs" id="lb-category-tabs"></div>
+
+<div class="lb-add-form" id="lb-add-form">
+  <input type="text" id="lb-f-title" placeholder="제목 (예: 슈카월드 경제 강의)">
+  <input type="url" id="lb-f-url" placeholder="URL (https://...)">
+  <select id="lb-f-category"><option value="">분류 선택</option></select>
+  <textarea id="lb-f-memo" placeholder="메모 (선택)"></textarea>
+  <div class="lb-form-btns">
+    <button class="btn-primary" id="lb-f-submit">저장</button>
+    <button class="btn-secondary" id="lb-f-cancel">취소</button>
+  </div>
+</div>
+
+<div id="lb-link-list"></div>
+
+<button class="lb-fab" id="lb-add-btn">+ 링크 추가</button>
+
+</div><!-- /linkbox-panel -->
+
+</div><!-- /app-layout -->
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -1040,6 +1173,257 @@
 
     return wrap;
   }
+
+  // ===== 링크 보관함 JS =====
+  var lbLinksRef = db.ref("linkbox/links");
+  var lbCatsRef = db.ref("linkbox/categories");
+
+  var lbLinks = [];
+  var lbCategories = ["전체", "유튜브", "뉴스", "공부", "기타"];
+  var lbActiveCategory = "전체";
+  var lbSearchQuery = "";
+  var lbEditingId = null;
+
+  lbCatsRef.on("value", function (snap) {
+    var val = snap.val();
+    if (val && Array.isArray(val)) {
+      lbCategories = ["전체"].concat(val.filter(function (c) { return c !== "전체"; }));
+    } else {
+      lbCategories = ["전체", "유튜브", "뉴스", "공부", "기타"];
+      lbCatsRef.set(lbCategories.filter(function (c) { return c !== "전체"; }));
+    }
+    lbRenderTabs();
+    lbRenderCategorySelect();
+  });
+
+  lbLinksRef.on("value", function (snap) {
+    var val = snap.val();
+    lbLinks = val ? Object.keys(val).map(function (k) {
+      return Object.assign({ id: k }, val[k]);
+    }).reverse() : [];
+    lbRenderLinks();
+  });
+
+  function lbGetThumbnail(url) {
+    // 유튜브 썸네일
+    var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) {
+      return "https://img.youtube.com/vi/" + ytMatch[1] + "/mqdefault.jpg";
+    }
+    // 일반 URL: Google 페이지 스크린샷 API
+    return "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(url);
+  }
+
+  function lbIsYoutube(url) {
+    return /youtube\.com|youtu\.be/.test(url);
+  }
+
+  function lbSaveLink(link) {
+    if (link.id) {
+      lbLinksRef.child(link.id).set({ title: link.title, url: link.url, category: link.category, memo: link.memo, createdAt: link.createdAt || Date.now() });
+    } else {
+      lbLinksRef.push({ title: link.title, url: link.url, category: link.category, memo: link.memo, createdAt: Date.now() });
+    }
+  }
+
+  function lbDeleteLink(id) {
+    if (!confirm("이 링크를 삭제하시겠습니까?")) return;
+    lbLinksRef.child(id).remove();
+  }
+
+  function lbRenderTabs() {
+    var tabs = document.getElementById("lb-category-tabs");
+    if (!tabs) return;
+    tabs.innerHTML = "";
+    lbCategories.forEach(function (cat) {
+      var btn = document.createElement("button");
+      btn.className = "tab-btn" + (cat === lbActiveCategory ? " active" : "");
+      btn.textContent = cat;
+      btn.onclick = function () { lbActiveCategory = cat; lbRenderTabs(); lbRenderLinks(); };
+      tabs.appendChild(btn);
+    });
+    var addCatBtn = document.createElement("button");
+    addCatBtn.className = "add-category-btn";
+    addCatBtn.textContent = "+ 분류";
+    addCatBtn.onclick = function () {
+      var name = prompt("새 분류 이름을 입력하세요");
+      if (!name || !name.trim()) return;
+      if (lbCategories.includes(name.trim())) { alert("이미 존재하는 분류입니다."); return; }
+      lbCategories.push(name.trim());
+      lbCatsRef.set(lbCategories.filter(function (c) { return c !== "전체"; }));
+    };
+    tabs.appendChild(addCatBtn);
+  }
+
+  function lbRenderCategorySelect() {
+    var sel = document.getElementById("lb-f-category");
+    if (!sel) return;
+    var current = sel.value;
+    sel.innerHTML = '<option value="">분류 선택</option>';
+    lbCategories.filter(function (c) { return c !== "전체"; }).forEach(function (cat) {
+      var opt = document.createElement("option");
+      opt.value = cat; opt.textContent = cat;
+      if (cat === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    var delOpt = document.createElement("option");
+    delOpt.value = "__delete__"; delOpt.textContent = "── 분류 삭제 ──";
+    sel.appendChild(delOpt);
+  }
+
+  function lbRenderLinks() {
+    var list = document.getElementById("lb-link-list");
+    if (!list) return;
+    list.innerHTML = "";
+    var filtered = lbLinks.filter(function (l) {
+      var matchCat = lbActiveCategory === "전체" || l.category === lbActiveCategory;
+      var q = lbSearchQuery.toLowerCase();
+      var matchSearch = !q || (l.title && l.title.toLowerCase().includes(q)) || (l.url && l.url.toLowerCase().includes(q)) || (l.memo && l.memo.toLowerCase().includes(q));
+      return matchCat && matchSearch;
+    });
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-msg">저장된 링크가 없습니다.<br>아래 버튼으로 추가해보세요.</div>';
+      return;
+    }
+    filtered.forEach(function (link) {
+      var card = document.createElement("div");
+      card.className = "link-card";
+
+      // 썸네일 (유튜브는 크게, 일반은 파비콘)
+      var thumb = lbGetThumbnail(link.url);
+      var isYt = lbIsYoutube(link.url);
+
+      if (isYt) {
+        var thumbImg = document.createElement("img");
+        thumbImg.src = thumb;
+        thumbImg.style.width = "100%";
+        thumbImg.style.borderRadius = "8px";
+        thumbImg.style.marginBottom = "10px";
+        thumbImg.style.display = "block";
+        thumbImg.style.objectFit = "cover";
+        thumbImg.style.maxHeight = "160px";
+        thumbImg.onerror = function () { this.style.display = "none"; };
+        card.appendChild(thumbImg);
+      }
+
+      var top = document.createElement("div");
+      top.className = "link-card-top";
+      var info = document.createElement("div");
+      info.style.flex = "1"; info.style.minWidth = "0";
+
+      // 파비콘 + 제목 한 줄
+      var titleRow = document.createElement("div");
+      titleRow.style.display = "flex";
+      titleRow.style.alignItems = "center";
+      titleRow.style.gap = "6px";
+      titleRow.style.marginBottom = "4px";
+
+      if (!isYt) {
+        var favicon = document.createElement("img");
+        favicon.src = thumb;
+        favicon.style.width = "16px";
+        favicon.style.height = "16px";
+        favicon.style.borderRadius = "3px";
+        favicon.style.flexShrink = "0";
+        favicon.onerror = function () { this.style.display = "none"; };
+        titleRow.appendChild(favicon);
+      }
+
+      var titleA = document.createElement("a");
+      titleA.className = "link-card-title";
+      titleA.href = link.url; titleA.target = "_blank";
+      titleA.textContent = link.title || link.url;
+      titleA.style.marginBottom = "0";
+      titleRow.appendChild(titleA);
+
+      var urlEl = document.createElement("div");
+      urlEl.className = "link-card-url"; urlEl.textContent = link.url;
+      var meta = document.createElement("div");
+      meta.className = "link-card-meta";
+      if (link.category) {
+        var catBadge = document.createElement("span");
+        catBadge.className = "link-card-category"; catBadge.textContent = link.category;
+        meta.appendChild(catBadge);
+      }
+      if (link.memo) {
+        var memoEl = document.createElement("span");
+        memoEl.className = "link-card-memo"; memoEl.textContent = link.memo;
+        meta.appendChild(memoEl);
+      }
+      info.appendChild(titleRow); info.appendChild(urlEl); info.appendChild(meta);
+      var actions = document.createElement("div");
+      actions.className = "link-card-actions";
+      var editBtn = document.createElement("button");
+      editBtn.className = "icon-btn"; editBtn.textContent = "✎"; editBtn.title = "수정";
+      editBtn.onclick = function () { lbOpenEditForm(link); };
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn"; delBtn.textContent = "✕"; delBtn.title = "삭제";
+      delBtn.onclick = function () { lbDeleteLink(link.id); };
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+      top.appendChild(info); top.appendChild(actions);
+      card.appendChild(top);
+      list.appendChild(card);
+    });
+  }
+
+  function lbOpenAddForm() {
+    lbEditingId = null;
+    document.getElementById("lb-f-title").value = "";
+    document.getElementById("lb-f-url").value = "";
+    document.getElementById("lb-f-category").value = "";
+    document.getElementById("lb-f-memo").value = "";
+    document.getElementById("lb-f-submit").textContent = "저장";
+    document.getElementById("lb-add-form").classList.add("open");
+    document.getElementById("lb-f-title").focus();
+  }
+
+  function lbOpenEditForm(link) {
+    lbEditingId = link.id;
+    document.getElementById("lb-f-title").value = link.title || "";
+    document.getElementById("lb-f-url").value = link.url || "";
+    document.getElementById("lb-f-category").value = link.category || "";
+    document.getElementById("lb-f-memo").value = link.memo || "";
+    document.getElementById("lb-f-submit").textContent = "수정 저장";
+    document.getElementById("lb-add-form").classList.add("open");
+    document.getElementById("lb-f-title").focus();
+  }
+
+  function lbCloseForm() {
+    lbEditingId = null;
+    document.getElementById("lb-add-form").classList.remove("open");
+  }
+
+  document.getElementById("lb-add-btn").onclick = lbOpenAddForm;
+  document.getElementById("lb-f-cancel").onclick = lbCloseForm;
+
+  document.getElementById("lb-f-submit").onclick = function () {
+    var title = document.getElementById("lb-f-title").value.trim();
+    var url = document.getElementById("lb-f-url").value.trim();
+    var category = document.getElementById("lb-f-category").value;
+    var memo = document.getElementById("lb-f-memo").value.trim();
+    if (!title || !url) { alert("제목과 URL은 필수입니다."); return; }
+    if (category === "__delete__") { alert("분류를 선택해주세요."); return; }
+    if (!/^https?:\/\//.test(url)) url = "https://" + url;
+    lbSaveLink({ id: lbEditingId, title: title, url: url, category: category, memo: memo });
+    lbCloseForm();
+  };
+
+  document.getElementById("lb-f-category").onchange = function () {
+    if (this.value === "__delete__") {
+      var name = prompt("삭제할 분류 이름을 입력하세요");
+      if (!name || !name.trim()) { this.value = ""; return; }
+      if (!lbCategories.includes(name.trim())) { alert("존재하지 않는 분류입니다."); this.value = ""; return; }
+      if (!confirm('"' + name.trim() + '" 분류를 삭제하시겠습니까?')) { this.value = ""; return; }
+      lbCategories = lbCategories.filter(function (c) { return c !== name.trim(); });
+      lbCatsRef.set(lbCategories.filter(function (c) { return c !== "전체"; }));
+      this.value = "";
+    }
+  };
+
+  document.getElementById("lb-search").oninput = function () {
+    lbSearchQuery = this.value;
+    lbRenderLinks();
+  };
 </script>
 
 </body>
