@@ -26,23 +26,19 @@
     align-items: flex-start;
     gap: 0;
     min-height: 100vh;
-    width: max-content;
-    min-width: 100vw;
   }
 
   /* ===== 상단 차트 바 ===== */
   .chart-bar {
-    position: sticky;
-    top: 0;
-    z-index: 100;
     background: var(--bg);
     border-bottom: 2px solid var(--border);
     display: flex;
     gap: 0;
     overflow-x: auto;
-    width: 100vw;
     height: 240px;
     flex-shrink: 0;
+    width: max-content;
+    min-width: 100%;
   }
   .chart-item {
     flex: 0 0 280px;
@@ -61,7 +57,8 @@
   .page-wrap {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    width: max-content;
+    min-width: 100vw;
   }
   /* 왼쪽: 주식 허브 */
   .hub-panel {
@@ -437,6 +434,8 @@
 </head>
 <body>
 
+<div class="page-wrap">
+
 <!-- ===== 상단 차트 바 ===== -->
 <div class="chart-bar">
 
@@ -477,7 +476,6 @@
 
 </div><!-- /chart-bar -->
 
-<div class="page-wrap">
 <div class="app-layout">
 
 <!-- ===== 왼쪽: 주식 허브 ===== -->
