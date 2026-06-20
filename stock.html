@@ -454,7 +454,7 @@
   <button class="news-source-btn" data-source="fed">Fed·FOMC</button>
 </div>
 
-<button class="news-refresh-btn" id="news-refresh-btn" style="display:none">↻ 뉴스 불러오기</button>
+<button class="news-refresh-btn" id="news-refresh-btn">↻ 구글 뉴스에서 최신 뉴스 보기</button>
 
 <div id="news-list"></div>
 
@@ -1613,7 +1613,12 @@
   }
 
 
-  document.getElementById("news-refresh-btn").onclick = newsLoadAll;
+  document.getElementById("news-refresh-btn").onclick = function () {
+    var src = newsActiveSource === "all"
+      ? "https://news.google.com/search?q=%EA%B2%BD%EC%A0%9C+%EC%A3%BC%EC%8B%9D&hl=ko&gl=KR&ceid=KR:ko"
+      : NEWS_SOURCES[newsActiveSource].url;
+    window.open(src, "_blank");
+  };
 
   document.getElementById("news-source-tabs").onclick = function (e) {
     var btn = e.target.closest(".news-source-btn");
