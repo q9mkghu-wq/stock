@@ -447,14 +447,16 @@
 <div class="news-source-tabs" id="news-source-tabs">
   <button class="news-source-btn active" data-source="all">전체</button>
   <button class="news-source-btn" data-source="economy">경제 종합</button>
-  <button class="news-source-btn" data-source="stock">증시</button>
-  <button class="news-source-btn" data-source="finance">금융·금리</button>
+  <button class="news-source-btn" data-source="stock">코스피·코스닥</button>
+  <button class="news-source-btn" data-source="finance">금리·환율</button>
   <button class="news-source-btn" data-source="usa">미국 증시</button>
+  <button class="news-source-btn" data-source="semi">반도체</button>
+  <button class="news-source-btn" data-source="fed">Fed·FOMC</button>
 </div>
 
-<button class="news-refresh-btn" id="news-refresh-btn">↻ 뉴스 불러오기</button>
+<button class="news-refresh-btn" id="news-refresh-btn" style="display:none">↻ 뉴스 불러오기</button>
 
-<div id="news-list"><div class="news-loading">위 버튼을 눌러 뉴스를 불러오세요.</div></div>
+<div id="news-list"></div>
 
 </div><!-- /news-panel -->
 
@@ -1563,11 +1565,52 @@
 
   // ===== 경제 뉴스 JS =====
   var NEWS_SOURCES = {
-    economy:  { name: "경제 종합", url: "https://news.google.com/rss/search?q=%EA%B2%BD%EC%A0%9C+%EC%A3%BC%EC%8B%9D&hl=ko&gl=KR&ceid=KR:ko" },
-    stock:    { name: "증시", url: "https://news.google.com/rss/search?q=%EC%BD%94%EC%8A%A4%ED%94%BC+%EC%BD%94%EC%8A%A4%EB%8B%A5+%EC%A6%9D%EC%8B%9C&hl=ko&gl=KR&ceid=KR:ko" },
-    finance:  { name: "금융·금리", url: "https://news.google.com/rss/search?q=%EA%B8%88%EB%A6%AC+%EA%B8%88%EC%9C%B5+%ED%95%9C%EA%B5%AD%EC%9D%80%ED%96%89&hl=ko&gl=KR&ceid=KR:ko" },
-    usa:      { name: "미국 증시", url: "https://news.google.com/rss/search?q=%EB%82%98%EC%8A%A4%EB%8B%A5+%EB%89%B4%EC%9A%95%EC%A6%9D%EC%8B%9C+%EB%8B%A4%EC%9A%B0&hl=ko&gl=KR&ceid=KR:ko" }
+    economy:  { name: "경제 종합",    url: "https://news.google.com/search?q=%EA%B2%BD%EC%A0%9C+%EC%A3%BC%EC%8B%9D&hl=ko&gl=KR&ceid=KR:ko" },
+    stock:    { name: "코스피·코스닥", url: "https://news.google.com/search?q=%EC%BD%94%EC%8A%A4%ED%94%BC+%EC%BD%94%EC%8A%A4%EB%8B%A5&hl=ko&gl=KR&ceid=KR:ko" },
+    finance:  { name: "금리·환율",    url: "https://news.google.com/search?q=%EA%B8%88%EB%A6%AC+%ED%99%98%EC%9C%A8+%ED%95%9C%EA%B5%AD%EC%9D%80%ED%96%89&hl=ko&gl=KR&ceid=KR:ko" },
+    usa:      { name: "미국 증시",    url: "https://news.google.com/search?q=%EB%82%98%EC%8A%A4%EB%8B%A5+%EB%89%B4%EC%9A%95%EC%A6%9D%EC%8B%9C&hl=ko&gl=KR&ceid=KR:ko" },
+    semi:     { name: "반도체",       url: "https://news.google.com/search?q=%EB%B0%98%EB%8F%84%EC%B2%B4+%EC%82%BC%EC%84%B1+SK%ED%95%98%EC%9D%B4%EB%8B%89%EC%8A%A4&hl=ko&gl=KR&ceid=KR:ko" },
+    fed:      { name: "Fed·FOMC",    url: "https://news.google.com/search?q=FOMC+%EC%97%B0%EC%A4%80+%EA%B8%88%EB%A6%AC&hl=ko&gl=KR&ceid=KR:ko" }
   };
+
+  function newsRender() {
+    var list = document.getElementById("news-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    var sources = newsActiveSource === "all"
+      ? Object.keys(NEWS_SOURCES)
+      : [newsActiveSource];
+
+    sources.forEach(function (key) {
+      var src = NEWS_SOURCES[key];
+      var a = document.createElement("a");
+      a.className = "news-card";
+      a.href = src.url;
+      a.target = "_blank";
+
+      var badge = document.createElement("div");
+      badge.className = "news-card-source";
+      badge.textContent = src.name;
+
+      var title = document.createElement("div");
+      title.className = "news-card-title";
+      title.textContent = "구글 뉴스에서 \"" + src.name + "\" 최신 기사 보기 →";
+
+      var desc = document.createElement("div");
+      desc.className = "news-card-date";
+      desc.textContent = "클릭하면 구글 뉴스로 이동합니다";
+
+      a.appendChild(badge);
+      a.appendChild(title);
+      a.appendChild(desc);
+      list.appendChild(a);
+    });
+  }
+
+  function newsLoadAll() {
+    newsRender();
+  }
 
   var newsActiveSource = "all";
   var newsAllItems = [];
@@ -1675,6 +1718,9 @@
     newsActiveSource = btn.dataset.source;
     newsRender();
   };
+
+  // 페이지 로드 시 즉시 렌더링
+  newsRender();
 
   // ===== 메모장 JS =====
   var memoRef = db.ref("memopad");
