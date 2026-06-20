@@ -46,10 +46,52 @@
     min-width: 300px;
     padding: 24px 16px 60px;
     min-height: 100vh;
+    border-right: 2px solid var(--border);
   }
   .memo-panel header { margin-bottom: 20px; }
   .memo-panel header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
   .memo-panel header p { font-size: 14px; color: var(--text-sub); }
+
+  /* 뉴스 패널 */
+  .news-panel {
+    flex: 0 0 380px;
+    min-width: 300px;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+  }
+  .news-panel header { margin-bottom: 16px; }
+  .news-panel header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .news-panel header p { font-size: 14px; color: var(--text-sub); }
+  .news-source-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .news-source-btn {
+    padding: 5px 12px; border-radius: 16px;
+    border: 1px solid var(--border); background: var(--card-bg);
+    font-size: 12px; font-weight: 600; color: var(--text-sub); cursor: pointer;
+  }
+  .news-source-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .news-refresh-btn {
+    width: 100%; padding: 10px; margin-bottom: 14px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--card-bg); color: var(--accent);
+    font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .news-card {
+    background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    text-decoration: none; color: inherit; display: block;
+    transition: border-color 0.15s ease;
+  }
+  .news-card:hover { border-color: var(--accent); }
+  .news-card-source {
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    margin-bottom: 4px; text-transform: uppercase;
+  }
+  .news-card-title {
+    font-size: 15px; font-weight: 800; color: var(--text-main);
+    line-height: 1.4; margin-bottom: 6px;
+  }
+  .news-card-date { font-size: 11px; color: var(--text-sub); }
+  .news-loading { text-align: center; color: var(--text-sub); font-size: 14px; padding: 30px 0; }
   .memo-item {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -393,6 +435,27 @@
 <div id="memo-list"></div>
 
 </div><!-- /memo-panel -->
+
+<!-- ===== 뉴스 패널 ===== -->
+<div class="news-panel">
+
+<header>
+  <h1>📰 경제 뉴스</h1>
+  <p>최신 경제 뉴스를 한눈에 확인하세요.</p>
+</header>
+
+<div class="news-source-tabs" id="news-source-tabs">
+  <button class="news-source-btn active" data-source="all">전체</button>
+  <button class="news-source-btn" data-source="hankyung">한국경제</button>
+  <button class="news-source-btn" data-source="maeil">매일경제</button>
+  <button class="news-source-btn" data-source="yonhap">연합뉴스</button>
+</div>
+
+<button class="news-refresh-btn" id="news-refresh-btn">↻ 뉴스 불러오기</button>
+
+<div id="news-list"><div class="news-loading">위 버튼을 눌러 뉴스를 불러오세요.</div></div>
+
+</div><!-- /news-panel -->
 
 </div><!-- /app-layout -->
 
@@ -1495,6 +1558,129 @@
   document.getElementById("lb-search").oninput = function () {
     lbSearchQuery = this.value;
     lbRenderLinks();
+  };
+
+  // ===== 경제 뉴스 JS =====
+  var NEWS_SOURCES = {
+    hankyung: { name: "한국경제", url: "https://www.hankyung.com/feed/economy" },
+    maeil:    { name: "매일경제", url: "https://www.mk.co.kr/rss/40300001/" },
+    yonhap:   { name: "연합뉴스", url: "https://www.yonhapnewstv.co.kr/category/news/economy/feed/" }
+  };
+
+  var newsActiveSource = "all";
+  var newsAllItems = [];
+
+  function newsFormatDate(dateStr) {
+    if (!dateStr) return "";
+    var d = new Date(dateStr);
+    if (isNaN(d)) return dateStr;
+    var now = new Date();
+    var diff = Math.floor((now - d) / 60000);
+    if (diff < 1) return "방금 전";
+    if (diff < 60) return diff + "분 전";
+    if (diff < 1440) return Math.floor(diff / 60) + "시간 전";
+    return String(d.getMonth()+1).padStart(2,"0") + "/" + String(d.getDate()).padStart(2,"0");
+  }
+
+  function newsFetchRSS(sourceKey) {
+    var src = NEWS_SOURCES[sourceKey];
+    var proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(src.url) + "&_t=" + Date.now();
+    return fetch(proxyUrl, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("fail");
+        return res.text();
+      })
+      .then(function (text) {
+        var parser = new DOMParser();
+        var xml = parser.parseFromString(text, "text/xml");
+        var items = xml.querySelectorAll("item");
+        var result = [];
+        items.forEach(function (item) {
+          var title = item.querySelector("title");
+          var link = item.querySelector("link");
+          var pubDate = item.querySelector("pubDate");
+          if (title && link) {
+            result.push({
+              source: src.name,
+              sourceKey: sourceKey,
+              title: title.textContent.trim(),
+              url: link.textContent.trim() || (link.nextSibling && link.nextSibling.textContent.trim()),
+              date: pubDate ? pubDate.textContent.trim() : ""
+            });
+          }
+        });
+        return result;
+      })
+      .catch(function () { return []; });
+  }
+
+  function newsRender() {
+    var list = document.getElementById("news-list");
+    if (!list) return;
+
+    var filtered = newsActiveSource === "all" ? newsAllItems
+      : newsAllItems.filter(function (n) { return n.sourceKey === newsActiveSource; });
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="news-loading">뉴스를 불러올 수 없습니다.</div>';
+      return;
+    }
+
+    list.innerHTML = "";
+    filtered.forEach(function (item) {
+      var a = document.createElement("a");
+      a.className = "news-card";
+      a.href = item.url;
+      a.target = "_blank";
+
+      var source = document.createElement("div");
+      source.className = "news-card-source";
+      source.textContent = item.source;
+
+      var title = document.createElement("div");
+      title.className = "news-card-title";
+      title.textContent = item.title;
+
+      var date = document.createElement("div");
+      date.className = "news-card-date";
+      date.textContent = newsFormatDate(item.date);
+
+      a.appendChild(source);
+      a.appendChild(title);
+      a.appendChild(date);
+      list.appendChild(a);
+    });
+  }
+
+  function newsLoadAll() {
+    var btn = document.getElementById("news-refresh-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "불러오는 중..."; }
+    document.getElementById("news-list").innerHTML = '<div class="news-loading">뉴스를 불러오는 중...</div>';
+
+    var promises = Object.keys(NEWS_SOURCES).map(function (key) {
+      return newsFetchRSS(key);
+    });
+
+    Promise.all(promises).then(function (results) {
+      newsAllItems = [].concat.apply([], results);
+      // 날짜 최신순 정렬
+      newsAllItems.sort(function (a, b) {
+        return new Date(b.date || 0) - new Date(a.date || 0);
+      });
+      newsRender();
+      if (btn) { btn.disabled = false; btn.textContent = "↻ 뉴스 불러오기"; }
+    });
+  }
+
+  document.getElementById("news-refresh-btn").onclick = newsLoadAll;
+
+  document.getElementById("news-source-tabs").onclick = function (e) {
+    var btn = e.target.closest(".news-source-btn");
+    if (!btn) return;
+    document.querySelectorAll(".news-source-btn").forEach(function (b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    newsActiveSource = btn.dataset.source;
+    newsRender();
   };
 
   // ===== 메모장 JS =====
