@@ -282,65 +282,43 @@
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 
-  /* ===== 오른쪽 슬라이더 ===== */
+  /* ===== 오른쪽 패널 영역 ===== */
   .right-area {
     flex: 1;
     min-width: 320px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: auto;
   }
-  .slider-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    border-bottom: 2px solid var(--border);
-    background: var(--bg);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .panel-order-item {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 5px 10px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-main);
-  }
-  .panel-move-btn {
-    background: none;
-    border: none;
-    font-size: 14px;
-    cursor: pointer;
-    color: var(--accent);
-    padding: 0 2px;
-    line-height: 1;
-  }
-  .panel-move-btn:disabled { opacity: 0.2; cursor: default; }
   .panels-container {
     display: flex;
     flex: 1;
+    align-items: flex-start;
   }
   .slide-panel {
     flex: 0 0 380px;
     min-width: 300px;
     padding: 24px 16px 60px;
-    border-right: 1px solid var(--border);
+    border-right: 2px solid var(--border);
     box-sizing: border-box;
+    min-height: 100vh;
   }
   .slide-panel:last-child { border-right: none; }
-  .slide-title {
-    font-size: 22px;
+  .panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 21px;
     font-weight: 700;
+    color: var(--text-main);
     margin-bottom: 16px;
+  }
+  .panel-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   /* ===== 링크 보관함 ===== */
@@ -449,21 +427,20 @@
 
 </div><!-- /hub-panel -->
 
-<!-- ===== 오른쪽: 슬라이더 패널 ===== -->
+<!-- ===== 오른쪽: 패널 영역 ===== -->
 <div class="right-area">
 
-  <!-- 패널 순서 변경 네비게이션 -->
-  <div class="slider-nav">
-    <span style="font-size:13px; font-weight:700; color:var(--text-sub);">패널 순서 변경</span>
-    <div class="slider-dots" id="panel-order-indicators"></div>
-  </div>
-
-  <!-- 패널 컨테이너 -->
   <div class="panels-container" id="panels-container">
 
       <!-- 링크 보관함 -->
       <div class="slide-panel" id="slide-linkbox">
-        <h1 class="slide-title">🔖 링크 보관함</h1>
+        <div class="panel-title-row" id="title-linkbox">
+          <span>🔖 링크 보관함</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="linkbox" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="linkbox" data-dir="1">→</button>
+          </div>
+        </div>
         <div class="search-box">
           <input type="text" id="lb-search" placeholder="제목, URL, 메모 검색...">
         </div>
@@ -484,7 +461,13 @@
 
       <!-- 메모장 -->
       <div class="slide-panel" id="slide-memo">
-        <h1 class="slide-title">📝 메모장</h1>
+        <div class="panel-title-row" id="title-memo">
+          <span>📝 메모장</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="memo" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="memo" data-dir="1">→</button>
+          </div>
+        </div>
         <div class="memo-write-box">
           <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
           <button class="btn-primary" id="memo-submit">저장</button>
@@ -494,7 +477,13 @@
 
       <!-- 경제 뉴스 -->
       <div class="slide-panel" id="slide-news">
-        <h1 class="slide-title">📰 경제 뉴스</h1>
+        <div class="panel-title-row" id="title-news">
+          <span>📰 경제 뉴스</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="news" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="news" data-dir="1">→</button>
+          </div>
+        </div>
         <div class="news-source-tabs" id="news-source-tabs">
           <button class="news-source-btn active" data-source="all">전체</button>
           <button class="news-source-btn" data-source="economy">경제 종합</button>
@@ -1365,56 +1354,38 @@
   }
 
   // ===== 패널 순서 변경 JS =====
-  var panelOrder = ["linkbox", "memo", "news"];
-  var panelLabels = { linkbox: "🔖 링크 보관함", memo: "📝 메모장", news: "📰 경제 뉴스" };
-
-  function renderPanelOrder() {
+  function updatePanelBtns() {
     var container = document.getElementById("panels-container");
-    var nav = document.getElementById("panel-order-indicators");
-    nav.innerHTML = "";
-
-    panelOrder.forEach(function (key, idx) {
-      // 인디케이터 + 이동 버튼
-      var item = document.createElement("div");
-      item.className = "panel-order-item";
-
-      var leftBtn = document.createElement("button");
-      leftBtn.className = "panel-move-btn";
-      leftBtn.textContent = "←";
-      leftBtn.disabled = idx === 0;
-      leftBtn.onclick = function () {
-        var tmp = panelOrder[idx];
-        panelOrder[idx] = panelOrder[idx - 1];
-        panelOrder[idx - 1] = tmp;
-        renderPanelOrder();
-      };
-
-      var label = document.createElement("span");
-      label.textContent = panelLabels[key];
-
-      var rightBtn = document.createElement("button");
-      rightBtn.className = "panel-move-btn";
-      rightBtn.textContent = "→";
-      rightBtn.disabled = idx === panelOrder.length - 1;
-      rightBtn.onclick = function () {
-        var tmp = panelOrder[idx];
-        panelOrder[idx] = panelOrder[idx + 1];
-        panelOrder[idx + 1] = tmp;
-        renderPanelOrder();
-      };
-
-      item.appendChild(leftBtn);
-      item.appendChild(label);
-      item.appendChild(rightBtn);
-      nav.appendChild(item);
-
-      // 패널 순서대로 DOM 이동
-      var panel = document.getElementById("slide-" + key);
-      if (panel) container.appendChild(panel);
+    var panels = container.querySelectorAll(".slide-panel");
+    panels.forEach(function (panel, idx) {
+      var leftBtn = panel.querySelector(".panel-lr-btn[data-dir='-1']");
+      var rightBtn = panel.querySelector(".panel-lr-btn[data-dir='1']");
+      if (leftBtn) leftBtn.disabled = idx === 0;
+      if (rightBtn) rightBtn.disabled = idx === panels.length - 1;
     });
   }
 
-  renderPanelOrder();
+  document.getElementById("panels-container").addEventListener("click", function (e) {
+    var btn = e.target.closest(".panel-lr-btn");
+    if (!btn) return;
+    var id = btn.dataset.id;
+    var dir = parseInt(btn.dataset.dir);
+    var container = document.getElementById("panels-container");
+    var panels = Array.from(container.querySelectorAll(".slide-panel"));
+    var idx = panels.findIndex(function (p) { return p.id === "slide-" + id; });
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= panels.length) return;
+
+    if (dir === 1) {
+      container.insertBefore(panels[newIdx + 1] || null, panels[idx]);
+      container.insertBefore(panels[idx], panels[newIdx]);
+    } else {
+      container.insertBefore(panels[idx], panels[newIdx]);
+    }
+    updatePanelBtns();
+  });
+
+  updatePanelBtns();
 
   // ===== 링크 보관함 JS =====
   var lbLinksRef = db.ref("linkbox/links");
