@@ -1753,11 +1753,18 @@
     memoRenderList();
   });
 
-  function memoSave(id, text) {
+  function memoSave(id, text, style) {
+    var obj = { text: text, updatedAt: Date.now() };
+    if (style) {
+      obj.fontSize = style.fontSize || "15px";
+      obj.color = style.color || "#2C2A26";
+      obj.bgColor = style.bgColor || "#FFFFFF";
+    }
     if (id) {
-      memoRef.child(id).update({ text: text, updatedAt: Date.now() });
+      memoRef.child(id).update(obj);
     } else {
-      memoRef.push({ text: text, createdAt: Date.now() });
+      obj.createdAt = Date.now();
+      memoRef.push(obj);
     }
   }
 
@@ -1779,10 +1786,13 @@
     memoList.forEach(function (memo) {
       var item = document.createElement("div");
       item.className = "memo-item";
+      item.style.background = memo.bgColor || "#FFFFFF";
 
       var textEl = document.createElement("div");
       textEl.className = "memo-item-text";
       textEl.textContent = memo.text;
+      textEl.style.fontSize = memo.fontSize || "15px";
+      textEl.style.color = memo.color || "#2C2A26";
 
       var editArea = document.createElement("textarea");
       editArea.value = memo.text;
@@ -1792,10 +1802,68 @@
       editArea.style.padding = "10px 12px";
       editArea.style.border = "1px solid var(--border)";
       editArea.style.borderRadius = "8px";
-      editArea.style.fontSize = "14px";
+      editArea.style.fontSize = memo.fontSize || "15px";
       editArea.style.fontFamily = "inherit";
       editArea.style.resize = "vertical";
       editArea.style.marginBottom = "8px";
+
+      // 스타일 툴바
+      var styleBar = document.createElement("div");
+      styleBar.style.cssText = "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;";
+
+      var sizeLabel = document.createElement("span");
+      sizeLabel.textContent = "크기";
+      sizeLabel.style.cssText = "font-size:12px;color:var(--text-sub);";
+
+      var sizeSelect = document.createElement("select");
+      sizeSelect.style.cssText = "padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;";
+      ["12px","13px","14px","15px","16px","18px","20px","24px"].forEach(function (sz) {
+        var opt = document.createElement("option");
+        opt.value = sz; opt.textContent = sz;
+        if ((memo.fontSize || "15px") === sz) opt.selected = true;
+        sizeSelect.appendChild(opt);
+      });
+      sizeSelect.onchange = function () {
+        textEl.style.fontSize = this.value;
+        editArea.style.fontSize = this.value;
+        memo.fontSize = this.value;
+        memoSave(memo.id, memo.text, memo);
+      };
+
+      var colorLabel = document.createElement("span");
+      colorLabel.textContent = "글씨색";
+      colorLabel.style.cssText = "font-size:12px;color:var(--text-sub);";
+
+      var colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.value = memo.color || "#2C2A26";
+      colorInput.style.cssText = "width:32px;height:26px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:1px;";
+      colorInput.onchange = function () {
+        textEl.style.color = this.value;
+        memo.color = this.value;
+        memoSave(memo.id, memo.text, memo);
+      };
+
+      var bgLabel = document.createElement("span");
+      bgLabel.textContent = "배경색";
+      bgLabel.style.cssText = "font-size:12px;color:var(--text-sub);";
+
+      var bgInput = document.createElement("input");
+      bgInput.type = "color";
+      bgInput.value = memo.bgColor || "#FFFFFF";
+      bgInput.style.cssText = "width:32px;height:26px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:1px;";
+      bgInput.onchange = function () {
+        item.style.background = this.value;
+        memo.bgColor = this.value;
+        memoSave(memo.id, memo.text, memo);
+      };
+
+      styleBar.appendChild(sizeLabel);
+      styleBar.appendChild(sizeSelect);
+      styleBar.appendChild(colorLabel);
+      styleBar.appendChild(colorInput);
+      styleBar.appendChild(bgLabel);
+      styleBar.appendChild(bgInput);
 
       var dateEl = document.createElement("div");
       dateEl.className = "memo-item-date";
@@ -1819,7 +1887,8 @@
         } else {
           var newText = editArea.value.trim();
           if (!newText) { alert("내용을 입력해주세요."); return; }
-          memoSave(memo.id, newText);
+          memo.text = newText;
+          memoSave(memo.id, newText, memo);
           editBtn.textContent = "✎";
         }
       };
@@ -1835,6 +1904,7 @@
 
       item.appendChild(textEl);
       item.appendChild(editArea);
+      item.appendChild(styleBar);
       item.appendChild(dateEl);
       item.appendChild(actions);
       list.appendChild(item);
@@ -1844,7 +1914,7 @@
   document.getElementById("memo-submit").onclick = function () {
     var text = document.getElementById("memo-input").value.trim();
     if (!text) { alert("내용을 입력해주세요."); return; }
-    memoSave(null, text);
+    memoSave(null, text, { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" });
     document.getElementById("memo-input").value = "";
   };
 </script>
