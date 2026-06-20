@@ -39,6 +39,61 @@
     min-width: 320px;
     padding: 24px 16px 60px;
     min-height: 100vh;
+    border-right: 2px solid var(--border);
+  }
+  .memo-panel {
+    flex: 0 0 360px;
+    min-width: 300px;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+  }
+  .memo-panel header { margin-bottom: 20px; }
+  .memo-panel header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .memo-panel header p { font-size: 14px; color: var(--text-sub); }
+  .memo-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .memo-item-text {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-main);
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 8px;
+  }
+  .memo-item-date {
+    font-size: 11px;
+    color: var(--text-sub);
+    margin-bottom: 8px;
+  }
+  .memo-item-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .memo-write-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .memo-write-box textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
   }
   header { margin-bottom: 28px; }
   header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
@@ -321,6 +376,23 @@
 <button class="lb-fab" id="lb-add-btn">+ 링크 추가</button>
 
 </div><!-- /linkbox-panel -->
+
+<!-- ===== 오른쪽: 메모장 ===== -->
+<div class="memo-panel">
+
+<header>
+  <h1>📝 메모장</h1>
+  <p>중요한 내용을 빠르게 메모해두세요.</p>
+</header>
+
+<div class="memo-write-box">
+  <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
+  <button class="btn-primary" id="memo-submit">저장</button>
+</div>
+
+<div id="memo-list"></div>
+
+</div><!-- /memo-panel -->
 
 </div><!-- /app-layout -->
 
@@ -1423,6 +1495,114 @@
   document.getElementById("lb-search").oninput = function () {
     lbSearchQuery = this.value;
     lbRenderLinks();
+  };
+
+  // ===== 메모장 JS =====
+  var memoRef = db.ref("memopad");
+  var memoList = [];
+  var memoEditingId = null;
+
+  memoRef.on("value", function (snap) {
+    var val = snap.val();
+    memoList = val ? Object.keys(val).map(function (k) {
+      return Object.assign({ id: k }, val[k]);
+    }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }) : [];
+    memoRenderList();
+  });
+
+  function memoSave(id, text) {
+    if (id) {
+      memoRef.child(id).update({ text: text, updatedAt: Date.now() });
+    } else {
+      memoRef.push({ text: text, createdAt: Date.now() });
+    }
+  }
+
+  function memoDelete(id) {
+    if (!confirm("이 메모를 삭제하시겠습니까?")) return;
+    memoRef.child(id).remove();
+  }
+
+  function memoRenderList() {
+    var list = document.getElementById("memo-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    if (memoList.length === 0) {
+      list.innerHTML = '<div class="empty-msg">메모가 없습니다.<br>위에서 바로 작성해보세요.</div>';
+      return;
+    }
+
+    memoList.forEach(function (memo) {
+      var item = document.createElement("div");
+      item.className = "memo-item";
+
+      var textEl = document.createElement("div");
+      textEl.className = "memo-item-text";
+      textEl.textContent = memo.text;
+
+      var editArea = document.createElement("textarea");
+      editArea.value = memo.text;
+      editArea.style.display = "none";
+      editArea.style.width = "100%";
+      editArea.style.minHeight = "80px";
+      editArea.style.padding = "10px 12px";
+      editArea.style.border = "1px solid var(--border)";
+      editArea.style.borderRadius = "8px";
+      editArea.style.fontSize = "14px";
+      editArea.style.fontFamily = "inherit";
+      editArea.style.resize = "vertical";
+      editArea.style.marginBottom = "8px";
+
+      var dateEl = document.createElement("div");
+      dateEl.className = "memo-item-date";
+      var d = new Date(memo.updatedAt || memo.createdAt || Date.now());
+      dateEl.textContent = d.getFullYear() + "." + String(d.getMonth()+1).padStart(2,"0") + "." + String(d.getDate()).padStart(2,"0") + " " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
+
+      var actions = document.createElement("div");
+      actions.className = "memo-item-actions";
+
+      var editBtn = document.createElement("button");
+      editBtn.className = "icon-btn";
+      editBtn.textContent = "✎";
+      editBtn.title = "수정";
+      editBtn.onclick = function () {
+        var isEditing = editArea.style.display !== "none";
+        if (!isEditing) {
+          textEl.style.display = "none";
+          editArea.style.display = "block";
+          editArea.focus();
+          editBtn.textContent = "💾";
+        } else {
+          var newText = editArea.value.trim();
+          if (!newText) { alert("내용을 입력해주세요."); return; }
+          memoSave(memo.id, newText);
+          editBtn.textContent = "✎";
+        }
+      };
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.textContent = "✕";
+      delBtn.title = "삭제";
+      delBtn.onclick = function () { memoDelete(memo.id); };
+
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+
+      item.appendChild(textEl);
+      item.appendChild(editArea);
+      item.appendChild(dateEl);
+      item.appendChild(actions);
+      list.appendChild(item);
+    });
+  }
+
+  document.getElementById("memo-submit").onclick = function () {
+    var text = document.getElementById("memo-input").value.trim();
+    if (!text) { alert("내용을 입력해주세요."); return; }
+    memoSave(null, text);
+    document.getElementById("memo-input").value = "";
   };
 </script>
 
