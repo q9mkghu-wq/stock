@@ -446,10 +446,10 @@
 
 <div class="news-source-tabs" id="news-source-tabs">
   <button class="news-source-btn active" data-source="all">전체</button>
-  <button class="news-source-btn" data-source="hankyung">한국경제</button>
-  <button class="news-source-btn" data-source="yonhap">연합뉴스</button>
-  <button class="news-source-btn" data-source="mt">머니투데이</button>
-  <button class="news-source-btn" data-source="chosun">조선비즈</button>
+  <button class="news-source-btn" data-source="economy">경제 종합</button>
+  <button class="news-source-btn" data-source="stock">증시</button>
+  <button class="news-source-btn" data-source="finance">금융·금리</button>
+  <button class="news-source-btn" data-source="usa">미국 증시</button>
 </div>
 
 <button class="news-refresh-btn" id="news-refresh-btn">↻ 뉴스 불러오기</button>
@@ -1563,10 +1563,10 @@
 
   // ===== 경제 뉴스 JS =====
   var NEWS_SOURCES = {
-    hankyung: { name: "한국경제", url: "https://www.hankyung.com/feed/economy" },
-    yonhap:   { name: "연합뉴스", url: "https://www.yna.co.kr/rss/economy.xml" },
-    mt:       { name: "머니투데이", url: "https://news.mt.co.kr/mtsvr/rss/rss_news.xml" },
-    chosun:   { name: "조선비즈", url: "https://biz.chosun.com/rss/feed" }
+    economy:  { name: "경제 종합", url: "https://news.google.com/rss/search?q=%EA%B2%BD%EC%A0%9C+%EC%A3%BC%EC%8B%9D&hl=ko&gl=KR&ceid=KR:ko" },
+    stock:    { name: "증시", url: "https://news.google.com/rss/search?q=%EC%BD%94%EC%8A%A4%ED%94%BC+%EC%BD%94%EC%8A%A4%EB%8B%A5+%EC%A6%9D%EC%8B%9C&hl=ko&gl=KR&ceid=KR:ko" },
+    finance:  { name: "금융·금리", url: "https://news.google.com/rss/search?q=%EA%B8%88%EB%A6%AC+%EA%B8%88%EC%9C%B5+%ED%95%9C%EA%B5%AD%EC%9D%80%ED%96%89&hl=ko&gl=KR&ceid=KR:ko" },
+    usa:      { name: "미국 증시", url: "https://news.google.com/rss/search?q=%EB%82%98%EC%8A%A4%EB%8B%A5+%EB%89%B4%EC%9A%95%EC%A6%9D%EC%8B%9C+%EB%8B%A4%EC%9A%B0&hl=ko&gl=KR&ceid=KR:ko" }
   };
 
   var newsActiveSource = "all";
