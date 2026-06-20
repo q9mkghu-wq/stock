@@ -1584,32 +1584,23 @@
 
   function newsFetchRSS(sourceKey) {
     var src = NEWS_SOURCES[sourceKey];
-    var proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(src.url) + "&_t=" + Date.now();
-    return fetch(proxyUrl, { cache: "no-store" })
+    var apiUrl = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(src.url) + "&count=20&_t=" + Date.now();
+    return fetch(apiUrl, { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("fail");
-        return res.text();
+        return res.json();
       })
-      .then(function (text) {
-        var parser = new DOMParser();
-        var xml = parser.parseFromString(text, "text/xml");
-        var items = xml.querySelectorAll("item");
-        var result = [];
-        items.forEach(function (item) {
-          var title = item.querySelector("title");
-          var link = item.querySelector("link");
-          var pubDate = item.querySelector("pubDate");
-          if (title && link) {
-            result.push({
-              source: src.name,
-              sourceKey: sourceKey,
-              title: title.textContent.trim(),
-              url: link.textContent.trim() || (link.nextSibling && link.nextSibling.textContent.trim()),
-              date: pubDate ? pubDate.textContent.trim() : ""
-            });
-          }
+      .then(function (data) {
+        if (data.status !== "ok" || !data.items) return [];
+        return data.items.map(function (item) {
+          return {
+            source: src.name,
+            sourceKey: sourceKey,
+            title: item.title ? item.title.trim() : "",
+            url: item.link || "",
+            date: item.pubDate || ""
+          };
         });
-        return result;
       })
       .catch(function () { return []; });
   }
