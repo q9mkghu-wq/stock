@@ -282,6 +282,44 @@
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 
+  /* ===== 오른쪽 패널 탭 전환 ===== */
+  .right-area {
+    flex: 1;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .panel-tab-btn {
+    flex: 1;
+    padding: 14px 8px;
+    border: none;
+    background: none;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .panel-tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .panel-content {
+    display: none;
+    padding: 24px 16px 60px;
+  }
+  .panel-content.active { display: block; }
+
   /* ===== 링크 보관함 ===== */
   .linkbox-panel header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
   .linkbox-panel header p { font-size: 14px; color: var(--text-sub); margin-bottom: 20px; }
@@ -388,77 +426,61 @@
 
 </div><!-- /hub-panel -->
 
-<!-- ===== 오른쪽: 링크 보관함 ===== -->
-<div class="linkbox-panel">
+<!-- ===== 오른쪽: 탭 전환 패널 ===== -->
+<div class="right-area">
 
-<header>
-  <h1>🔖 링크 보관함</h1>
-  <p>유용한 링크를 분류별로 저장하고 관리하세요.</p>
-</header>
-
-<div class="search-box">
-  <input type="text" id="lb-search" placeholder="제목, URL, 메모 검색...">
-</div>
-
-<div class="category-tabs" id="lb-category-tabs"></div>
-
-<div class="lb-add-form" id="lb-add-form">
-  <input type="text" id="lb-f-title" placeholder="제목 (예: 슈카월드 경제 강의)">
-  <input type="url" id="lb-f-url" placeholder="URL (https://...)">
-  <select id="lb-f-category"><option value="">분류 선택</option></select>
-  <textarea id="lb-f-memo" placeholder="메모 (선택)"></textarea>
-  <div class="lb-form-btns">
-    <button class="btn-primary" id="lb-f-submit">저장</button>
-    <button class="btn-secondary" id="lb-f-cancel">취소</button>
+  <!-- 탭 버튼 -->
+  <div class="panel-tabs">
+    <button class="panel-tab-btn active" data-panel="linkbox">🔖 링크 보관함</button>
+    <button class="panel-tab-btn" data-panel="memo">📝 메모장</button>
+    <button class="panel-tab-btn" data-panel="news">📰 경제 뉴스</button>
   </div>
-</div>
 
-<div id="lb-link-list"></div>
+  <!-- 링크 보관함 -->
+  <div class="panel-content active" id="panel-linkbox">
+    <div class="search-box">
+      <input type="text" id="lb-search" placeholder="제목, URL, 메모 검색...">
+    </div>
+    <div class="category-tabs" id="lb-category-tabs"></div>
+    <div class="lb-add-form" id="lb-add-form">
+      <input type="text" id="lb-f-title" placeholder="제목 (예: 슈카월드 경제 강의)">
+      <input type="url" id="lb-f-url" placeholder="URL (https://...)">
+      <select id="lb-f-category"><option value="">분류 선택</option></select>
+      <textarea id="lb-f-memo" placeholder="메모 (선택)"></textarea>
+      <div class="lb-form-btns">
+        <button class="btn-primary" id="lb-f-submit">저장</button>
+        <button class="btn-secondary" id="lb-f-cancel">취소</button>
+      </div>
+    </div>
+    <div id="lb-link-list"></div>
+    <button class="lb-fab" id="lb-add-btn">+ 링크 추가</button>
+  </div>
 
-<button class="lb-fab" id="lb-add-btn">+ 링크 추가</button>
+  <!-- 메모장 -->
+  <div class="panel-content" id="panel-memo">
+    <div class="memo-write-box">
+      <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
+      <button class="btn-primary" id="memo-submit">저장</button>
+    </div>
+    <div id="memo-list"></div>
+  </div>
 
-</div><!-- /linkbox-panel -->
+  <!-- 경제 뉴스 -->
+  <div class="panel-content" id="panel-news">
+    <div class="news-source-tabs" id="news-source-tabs">
+      <button class="news-source-btn active" data-source="all">전체</button>
+      <button class="news-source-btn" data-source="economy">경제 종합</button>
+      <button class="news-source-btn" data-source="stock">코스피·코스닥</button>
+      <button class="news-source-btn" data-source="finance">금리·환율</button>
+      <button class="news-source-btn" data-source="usa">미국 증시</button>
+      <button class="news-source-btn" data-source="semi">반도체</button>
+      <button class="news-source-btn" data-source="fed">Fed·FOMC</button>
+    </div>
+    <button class="news-refresh-btn" id="news-refresh-btn">↻ 구글 뉴스에서 최신 뉴스 보기</button>
+    <div id="news-list"></div>
+  </div>
 
-<!-- ===== 오른쪽: 메모장 ===== -->
-<div class="memo-panel">
-
-<header>
-  <h1>📝 메모장</h1>
-  <p>중요한 내용을 빠르게 메모해두세요.</p>
-</header>
-
-<div class="memo-write-box">
-  <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
-  <button class="btn-primary" id="memo-submit">저장</button>
-</div>
-
-<div id="memo-list"></div>
-
-</div><!-- /memo-panel -->
-
-<!-- ===== 뉴스 패널 ===== -->
-<div class="news-panel">
-
-<header>
-  <h1>📰 경제 뉴스</h1>
-  <p>최신 경제 뉴스를 한눈에 확인하세요.</p>
-</header>
-
-<div class="news-source-tabs" id="news-source-tabs">
-  <button class="news-source-btn active" data-source="all">전체</button>
-  <button class="news-source-btn" data-source="economy">경제 종합</button>
-  <button class="news-source-btn" data-source="stock">코스피·코스닥</button>
-  <button class="news-source-btn" data-source="finance">금리·환율</button>
-  <button class="news-source-btn" data-source="usa">미국 증시</button>
-  <button class="news-source-btn" data-source="semi">반도체</button>
-  <button class="news-source-btn" data-source="fed">Fed·FOMC</button>
-</div>
-
-<button class="news-refresh-btn" id="news-refresh-btn">↻ 구글 뉴스에서 최신 뉴스 보기</button>
-
-<div id="news-list"></div>
-
-</div><!-- /news-panel -->
+</div><!-- /right-area -->
 
 </div><!-- /app-layout -->
 
@@ -1311,6 +1333,16 @@
 
     return wrap;
   }
+
+  // ===== 패널 탭 전환 =====
+  document.querySelector(".panel-tabs").addEventListener("click", function (e) {
+    var btn = e.target.closest(".panel-tab-btn");
+    if (!btn) return;
+    document.querySelectorAll(".panel-tab-btn").forEach(function (b) { b.classList.remove("active"); });
+    document.querySelectorAll(".panel-content").forEach(function (p) { p.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("panel-" + btn.dataset.panel).classList.add("active");
+  });
 
   // ===== 링크 보관함 JS =====
   var lbLinksRef = db.ref("linkbox/links");
