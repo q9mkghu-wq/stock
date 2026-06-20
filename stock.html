@@ -447,8 +447,9 @@
 <div class="news-source-tabs" id="news-source-tabs">
   <button class="news-source-btn active" data-source="all">전체</button>
   <button class="news-source-btn" data-source="hankyung">한국경제</button>
-  <button class="news-source-btn" data-source="maeil">매일경제</button>
   <button class="news-source-btn" data-source="yonhap">연합뉴스</button>
+  <button class="news-source-btn" data-source="mt">머니투데이</button>
+  <button class="news-source-btn" data-source="chosun">조선비즈</button>
 </div>
 
 <button class="news-refresh-btn" id="news-refresh-btn">↻ 뉴스 불러오기</button>
@@ -1563,8 +1564,9 @@
   // ===== 경제 뉴스 JS =====
   var NEWS_SOURCES = {
     hankyung: { name: "한국경제", url: "https://www.hankyung.com/feed/economy" },
-    maeil:    { name: "매일경제", url: "https://www.mk.co.kr/rss/40300001/" },
-    yonhap:   { name: "연합뉴스", url: "https://www.yonhapnewstv.co.kr/category/news/economy/feed/" }
+    yonhap:   { name: "연합뉴스", url: "https://www.yna.co.kr/rss/economy.xml" },
+    mt:       { name: "머니투데이", url: "https://news.mt.co.kr/mtsvr/rss/rss_news.xml" },
+    chosun:   { name: "조선비즈", url: "https://biz.chosun.com/rss/feed" }
   };
 
   var newsActiveSource = "all";
