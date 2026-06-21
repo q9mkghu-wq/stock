@@ -634,6 +634,14 @@
     <div class="chart-item-label">🏭 반도체 ETF (SOXX)</div>
     <iframe data-symbol="NASDAQ%3ASOXX" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22NASDAQ%3ASOXX%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
   </div>
+  <div class="chart-item">
+    <div class="chart-item-label">😨 VIX 공포지수</div>
+    <iframe data-symbol="TVC%3AVIX" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22TVC%3AVIX%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
+  </div>
+  <div class="chart-item" style="min-width:320px;overflow-y:auto;">
+    <div class="chart-item-label">📊 주요 경제 지표</div>
+    <div id="econ-indicators" style="padding:4px 0;"></div>
+  </div>
 </div><!-- /chart-bar -->
 
 <div class="app-layout">
@@ -1624,6 +1632,66 @@
     return wrap;
   }
 
+  // ===== 경제 지표 카드 =====
+  var econIndicators = [
+    {
+      label: "😱 공포탐욕지수 (Fear & Greed)",
+      desc: "CNN 공포탐욕지수\n0=극도공포 / 100=극도탐욕\n25이하 → 매수 고려 / 75이상 → 과열 주의",
+      url: "https://edition.cnn.com/markets/fear-and-greed",
+      color: "#E63946"
+    },
+    {
+      label: "🏦 FOMC 기준금리",
+      desc: "미국 연준 금리 결정\n금리인상 → 주식 하락압력\n금리인하 → 주식 상승기대",
+      url: "https://kr.investing.com/central-banks/fed-rate-monitor",
+      color: "#2A9D8F"
+    },
+    {
+      label: "📈 CPI 소비자물가지수",
+      desc: "미국 인플레이션 핵심 지표\nCPI 높음 → 금리인상 우려\nCPI 낮음 → 금리인하 기대",
+      url: "https://kr.investing.com/economic-calendar/cpi-733",
+      color: "#E9C46A"
+    },
+    {
+      label: "👷 고용지표 (NFP)",
+      desc: "미국 비농업 고용 (매월 첫째 금요일)\n고용 강함 → 금리 유지압력\n고용 약함 → 금리인하 기대",
+      url: "https://kr.investing.com/economic-calendar/nonfarm-payrolls-227",
+      color: "#457B9D"
+    },
+    {
+      label: "📅 경제지표 캘린더",
+      desc: "이번 주 주요 발표 일정\nFOMC / CPI / 고용 / GDP 등",
+      url: "https://kr.investing.com/economic-calendar/",
+      color: "#6D6875"
+    }
+  ];
+
+  function renderEconIndicators() {
+    var container = document.getElementById("econ-indicators");
+    if (!container) return;
+    container.innerHTML = "";
+    econIndicators.forEach(function (ind) {
+      var a = document.createElement("a");
+      a.href = ind.url;
+      a.target = "_blank";
+      a.style.cssText = "display:block;text-decoration:none;margin-bottom:6px;padding:7px 10px;background:#fff;border:1px solid var(--border);border-left:4px solid " + ind.color + ";border-radius:8px;";
+
+      var label = document.createElement("div");
+      label.style.cssText = "font-size:12px;font-weight:800;color:var(--text-main);margin-bottom:2px;";
+      label.textContent = ind.label;
+
+      var desc = document.createElement("div");
+      desc.style.cssText = "font-size:11px;color:var(--text-sub);white-space:pre-line;line-height:1.4;";
+      desc.textContent = ind.desc;
+
+      a.appendChild(label);
+      a.appendChild(desc);
+      container.appendChild(a);
+    });
+  }
+
+  renderEconIndicators();
+
   // ===== 차트 기간 선택 JS =====
   var chartSymbols = [
     "AMEX%3AEWY",
@@ -1632,7 +1700,8 @@
     "FOREXCOM%3ASPXUSD",
     "AMEX%3ADIA",
     "FX_IDC%3AUSDKRW",
-    "NASDAQ%3ASOXX"
+    "NASDAQ%3ASOXX",
+    "TVC%3AVIX"
   ];
   var currentRange = "1D";
 
