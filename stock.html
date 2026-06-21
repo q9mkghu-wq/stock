@@ -1034,6 +1034,38 @@
       nameEl.style.fontWeight = "800";
       nameEl.textContent = s.name;
 
+      // 카테고리 스티커
+      var tagRow = document.createElement("div");
+      tagRow.style.cssText = "display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;";
+
+      if (s.tag) {
+        var tagBadge = document.createElement("span");
+        tagBadge.textContent = s.tag;
+        tagBadge.style.cssText = "font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:" + (s.tagColor || "#E0DCD2") + ";color:#fff;";
+        tagRow.appendChild(tagBadge);
+      }
+
+      var tagBtn = document.createElement("button");
+      tagBtn.textContent = s.tag ? "✎" : "+ 태그";
+      tagBtn.style.cssText = "font-size:11px;padding:2px 7px;border:1px dashed var(--border);border-radius:10px;background:none;color:var(--accent);cursor:pointer;";
+      tagBtn.onclick = function () {
+        var tagName = prompt("카테고리 태그를 입력하세요\n예: 조선주, 방산주, 로봇주, 반도체, AI", s.tag || "");
+        if (tagName === null) return;
+        s.tag = tagName.trim();
+        if (s.tag) {
+          var colors = ["#E63946","#2A9D8F","#E9C46A","#457B9D","#6D6875","#F4A261","#264653","#A8DADC","#E76F51","#06D6A0"];
+          // 같은 태그명은 항상 같은 색상
+          var idx = 0;
+          for (var ci = 0; ci < s.tag.length; ci++) idx += s.tag.charCodeAt(ci);
+          s.tagColor = colors[idx % colors.length];
+        } else {
+          s.tagColor = null;
+        }
+        saveData(data);
+        renderTickerTape();
+      };
+      tagRow.appendChild(tagBtn);
+
       var qtyRow = document.createElement("div");
       qtyRow.style.display = "flex";
       qtyRow.style.alignItems = "center";
@@ -1076,6 +1108,7 @@
       qtyRow.appendChild(qtyBtn);
 
       left.appendChild(nameEl);
+      left.appendChild(tagRow);
       left.appendChild(qtyRow);
 
       // 오른쪽: 현재가 + 총액
