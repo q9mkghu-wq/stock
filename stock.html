@@ -638,10 +638,6 @@
     <div class="chart-item-label">😨 VIX 공포지수</div>
     <iframe data-symbol="TVC%3AVIX" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22TVC%3AVIX%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
   </div>
-  <div class="chart-item" style="min-width:320px;overflow-y:auto;">
-    <div class="chart-item-label">📊 주요 경제 지표</div>
-    <div id="econ-indicators" style="padding:4px 0;"></div>
-  </div>
 </div><!-- /chart-bar -->
 
 <div class="app-layout">
@@ -773,6 +769,12 @@
         </div>
         <div class="keyword-chips" id="keyword-chips"></div>
         <div id="keyword-news-list"><div class="empty-msg">키워드를 추가하고 선택하면<br>관련 뉴스 링크가 나타납니다.</div></div>
+
+        <!-- 경제 지표 -->
+        <div style="margin-top:24px;padding-top:20px;border-top:2px solid var(--border);">
+          <div style="font-size:21px;font-weight:700;color:var(--text-main);margin-bottom:12px;">📊 주요 경제 지표</div>
+          <div id="econ-indicators-panel"></div>
+        </div>
       </div>
 
     </div><!-- /panels-container -->
@@ -1667,21 +1669,21 @@
   ];
 
   function renderEconIndicators() {
-    var container = document.getElementById("econ-indicators");
+    var container = document.getElementById("econ-indicators-panel");
     if (!container) return;
     container.innerHTML = "";
     econIndicators.forEach(function (ind) {
       var a = document.createElement("a");
       a.href = ind.url;
       a.target = "_blank";
-      a.style.cssText = "display:block;text-decoration:none;margin-bottom:6px;padding:7px 10px;background:#fff;border:1px solid var(--border);border-left:4px solid " + ind.color + ";border-radius:8px;";
+      a.style.cssText = "display:block;text-decoration:none;margin-bottom:8px;padding:10px 12px;background:#fff;border:1px solid var(--border);border-left:4px solid " + ind.color + ";border-radius:10px;";
 
       var label = document.createElement("div");
-      label.style.cssText = "font-size:12px;font-weight:800;color:var(--text-main);margin-bottom:2px;";
+      label.style.cssText = "font-size:14px;font-weight:800;color:var(--text-main);margin-bottom:4px;";
       label.textContent = ind.label;
 
       var desc = document.createElement("div");
-      desc.style.cssText = "font-size:11px;color:var(--text-sub);white-space:pre-line;line-height:1.4;";
+      desc.style.cssText = "font-size:12px;color:var(--text-sub);white-space:pre-line;line-height:1.5;";
       desc.textContent = ind.desc;
 
       a.appendChild(label);
