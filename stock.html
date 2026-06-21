@@ -665,6 +665,10 @@
       <div class="slide-panel" id="slide-keyword-news" style="border-left:2px solid var(--border);">
         <div class="panel-title-row">
           <span>🔍 키워드 뉴스</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="keyword-news" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="keyword-news" data-dir="1">→</button>
+          </div>
         </div>
         <p style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">키워드를 추가하면 항상 최신 뉴스를 볼 수 있어요.</p>
         <div class="keyword-input-row">
@@ -1795,7 +1799,7 @@
   // Firebase에서 저장된 순서 불러오기
   panelOrderRef.once("value", function (snap) {
     var val = snap.val();
-    if (val && Array.isArray(val) && val.length === 3) {
+    if (val && Array.isArray(val) && val.length === 4) {
       applyPanelOrder(val);
     } else {
       updatePanelBtns();
