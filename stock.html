@@ -201,13 +201,15 @@
   }
   .memo-write-box textarea {
     width: 100%;
-    min-height: 100px;
+    min-height: 60px;
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
     font-family: inherit;
-    resize: vertical;
+    resize: none;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   header { margin-bottom: 28px; }
   header h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
@@ -2382,6 +2384,19 @@
   // 페이지 로드 시 즉시 렌더링
   newsRender();
 
+  // ===== textarea auto-resize =====
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
+  var memoInputEl = document.getElementById("memo-input");
+  if (memoInputEl) {
+    memoInputEl.style.overflow = "hidden";
+    memoInputEl.style.resize = "none";
+    memoInputEl.addEventListener("input", function () { autoResize(this); });
+  }
+
   // ===== 메모장 JS =====
   var memoRef = db.ref("memopad");
   var memoList = [];
@@ -2440,14 +2455,17 @@
       editArea.value = memo.text;
       editArea.style.display = "none";
       editArea.style.width = "100%";
-      editArea.style.minHeight = "80px";
+      editArea.style.minHeight = "60px";
       editArea.style.padding = "10px 12px";
       editArea.style.border = "1px solid var(--border)";
       editArea.style.borderRadius = "8px";
       editArea.style.fontSize = memo.fontSize || "15px";
       editArea.style.fontFamily = "inherit";
-      editArea.style.resize = "vertical";
+      editArea.style.resize = "none";
+      editArea.style.overflow = "hidden";
+      editArea.style.boxSizing = "border-box";
       editArea.style.marginBottom = "8px";
+      editArea.addEventListener("input", function () { autoResize(this); });
 
       // 스타일 툴바
       var styleBar = document.createElement("div");
@@ -2553,6 +2571,7 @@
         if (!isEditing) {
           textEl.style.display = "none";
           editArea.style.display = "block";
+          autoResize(editArea);
           editArea.focus();
           editBtn.textContent = "💾";
         } else {
