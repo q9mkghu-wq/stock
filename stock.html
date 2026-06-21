@@ -606,6 +606,28 @@
 
 <!-- ===== 상단 차트 바 ===== -->
 <div class="chart-bar" id="chart-bar">
+
+  <!-- 코스피 카드 -->
+  <div class="chart-item" id="kospi-card" style="min-width:220px;cursor:pointer;" onclick="window.open('https://finance.naver.com/sise/sise_index.naver?code=KOSPI','_blank')">
+    <div class="chart-item-label">🇰🇷 코스피</div>
+    <div id="kospi-data" style="padding:8px 0;">
+      <div style="font-size:22px;font-weight:800;color:var(--text-main);" id="kospi-price">로딩중...</div>
+      <div style="font-size:14px;font-weight:700;margin:4px 0;" id="kospi-change">-</div>
+      <div style="font-size:11px;color:var(--text-sub);margin-top:8px;line-height:1.8;" id="kospi-detail">-</div>
+    </div>
+    <div style="font-size:10px;color:var(--text-sub);margin-top:4px;">클릭 → 네이버 증권</div>
+  </div>
+
+  <!-- 코스닥 카드 -->
+  <div class="chart-item" id="kosdaq-card" style="min-width:220px;cursor:pointer;" onclick="window.open('https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ','_blank')">
+    <div class="chart-item-label">🇰🇷 코스닥</div>
+    <div id="kosdaq-data" style="padding:8px 0;">
+      <div style="font-size:22px;font-weight:800;color:var(--text-main);" id="kosdaq-price">로딩중...</div>
+      <div style="font-size:14px;font-weight:700;margin:4px 0;" id="kosdaq-change">-</div>
+      <div style="font-size:11px;color:var(--text-sub);margin-top:8px;line-height:1.8;" id="kosdaq-detail">-</div>
+    </div>
+    <div style="font-size:10px;color:var(--text-sub);margin-top:4px;">클릭 → 네이버 증권</div>
+  </div>
   <div class="chart-item">
     <div class="chart-item-label">🇰🇷 한국 ETF (EWY)</div>
     <iframe data-symbol="AMEX%3AEWY" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22AMEX%3AEWY%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
@@ -1629,6 +1651,54 @@
 
     return wrap;
   }
+
+  // ===== 코스피/코스닥 카드 =====
+  function fetchIndexData(symbol, priceId, changeId, detailId) {
+    var target = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=1d&range=1d";
+    var proxies = [
+      "https://corsproxy.io/?url=" + encodeURIComponent(target),
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(target)
+    ];
+
+    function tryProxy(idx) {
+      if (idx >= proxies.length) {
+        document.getElementById(priceId).textContent = "조회 실패";
+        return;
+      }
+      fetch(proxies[idx])
+        .then(function (res) { if (!res.ok) throw new Error(); return res.json(); })
+        .then(function (json) {
+          var result = json.chart && json.chart.result && json.chart.result[0];
+          var meta = result && result.meta;
+          if (!meta) throw new Error();
+
+          var price = meta.regularMarketPrice;
+          var prevClose = meta.previousClose || meta.chartPreviousClose;
+          var diff = price - prevClose;
+          var pct = (diff / prevClose * 100);
+          var sign = diff >= 0 ? "▲" : "▼";
+          var color = diff >= 0 ? "#E63946" : "#457B9D";
+
+          document.getElementById(priceId).textContent = price.toLocaleString(undefined, {maximumFractionDigits:2});
+          var changeEl = document.getElementById(changeId);
+          changeEl.style.color = color;
+          changeEl.textContent = sign + " " + Math.abs(diff).toFixed(2) + " (" + (diff >= 0 ? "+" : "") + pct.toFixed(2) + "%)";
+
+          var high = meta.regularMarketDayHigh;
+          var low = meta.regularMarketDayLow;
+          var vol = meta.regularMarketVolume;
+          document.getElementById(detailId).innerHTML =
+            "장중최고 <b>" + (high ? high.toLocaleString(undefined,{maximumFractionDigits:2}) : "-") + "</b><br>" +
+            "장중최저 <b>" + (low ? low.toLocaleString(undefined,{maximumFractionDigits:2}) : "-") + "</b><br>" +
+            "거래량 <b>" + (vol ? (vol/1000000).toFixed(0) + "M" : "-") + "</b>";
+        })
+        .catch(function () { tryProxy(idx + 1); });
+    }
+    tryProxy(0);
+  }
+
+  fetchIndexData("^KS11", "kospi-price", "kospi-change", "kospi-detail");
+  fetchIndexData("^KQ11", "kosdaq-price", "kosdaq-change", "kosdaq-detail");
 
   // ===== 경제 지표 카드 =====
   var econIndicators = [
