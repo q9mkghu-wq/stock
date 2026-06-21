@@ -416,6 +416,77 @@
   }
   .keyword-chip-del:hover { opacity: 1; }
 
+  /* ===== 유튜브 키워드 패널 ===== */
+  .yt-panel {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+  }
+  .yt-panel-title {
+    font-size: 21px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .yt-keyword-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .yt-keyword-input-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--card-bg);
+  }
+  .yt-keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .yt-video-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: border-color 0.15s;
+  }
+  .yt-video-card:hover { border-color: var(--accent); }
+  .yt-video-thumb {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+    background: #eee;
+  }
+  .yt-video-info {
+    padding: 10px 12px;
+  }
+  .yt-video-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  .yt-video-channel {
+    font-size: 12px;
+    color: var(--text-sub);
+  }
+  .yt-loading { text-align: center; color: var(--text-sub); font-size: 14px; padding: 20px 0; }
+
   .slide-panel {
     flex: 0 0 380px;
     min-width: 300px;
@@ -621,6 +692,21 @@
         </div>
         <div id="lb-link-list"></div>
         <button class="lb-fab" id="lb-add-btn">+ 링크 추가</button>
+
+        <!-- 유튜브 키워드 검색 -->
+        <div class="yt-panel">
+          <div class="yt-panel-title">
+            <span>▶ 유튜브 키워드</span>
+          </div>
+          <p style="font-size:13px;color:var(--text-sub);margin-bottom:10px;">키워드를 설정하면 최신 유튜브 영상을 확인할 수 있어요.</p>
+          <div class="yt-keyword-input-row">
+            <input type="text" id="yt-keyword-input" placeholder="예: 삼성전자, 주식공부...">
+            <button class="btn-primary" id="yt-keyword-add-btn" style="flex:0 0 auto;padding:10px 14px;">추가</button>
+          </div>
+          <div class="yt-keyword-chips" id="yt-keyword-chips"></div>
+          <button class="news-refresh-btn" id="yt-load-btn" style="display:none;">↻ 영상 불러오기</button>
+          <div id="yt-video-list"><div class="yt-loading">키워드를 추가하고 선택하세요.</div></div>
+        </div>
       </div>
 
       <!-- 메모장 -->
@@ -1617,6 +1703,174 @@
     document.querySelectorAll(".period-btn").forEach(function (b) { b.classList.remove("active"); });
     btn.classList.add("active");
     updateCharts(btn.dataset.range);
+  });
+
+  // ===== 유튜브 키워드 JS =====
+  var ytKeywordRef = db.ref("ytKeywords");
+  var ytKwList = [];
+  var ytActiveKw = null;
+
+  ytKeywordRef.on("value", function (snap) {
+    var val = snap.val();
+    ytKwList = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    ytRenderChips();
+  });
+
+  function ytSaveKeywords() {
+    ytKeywordRef.set(ytKwList);
+  }
+
+  function ytRenderChips() {
+    var chips = document.getElementById("yt-keyword-chips");
+    if (!chips) return;
+    chips.innerHTML = "";
+    if (ytKwList.length === 0) {
+      chips.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">아직 키워드가 없어요.</span>';
+      return;
+    }
+    ytKwList.forEach(function (kw, idx) {
+      var chip = document.createElement("div");
+      chip.className = "keyword-chip" + (kw === ytActiveKw ? " active" : "");
+
+      var label = document.createElement("span");
+      label.textContent = kw;
+      label.onclick = function () {
+        ytActiveKw = kw;
+        ytRenderChips();
+        ytLoadVideos(kw);
+      };
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "keyword-chip-del";
+      delBtn.textContent = "✕";
+      delBtn.onclick = function (e) {
+        e.stopPropagation();
+        ytKwList.splice(idx, 1);
+        if (ytActiveKw === kw) {
+          ytActiveKw = null;
+          document.getElementById("yt-video-list").innerHTML = '<div class="yt-loading">키워드를 선택하세요.</div>';
+        }
+        ytSaveKeywords();
+      };
+
+      chip.appendChild(label);
+      chip.appendChild(delBtn);
+      chips.appendChild(chip);
+    });
+  }
+
+  function ytLoadVideos(kw) {
+    var list = document.getElementById("yt-video-list");
+    if (!list) return;
+    list.innerHTML = '<div class="yt-loading">불러오는 중...</div>';
+
+    // rss2json으로 유튜브 검색 RSS 시도
+    var ytRssUrl = "https://www.youtube.com/feeds/videos.xml?q=" + encodeURIComponent(kw);
+    var apiUrl = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(ytRssUrl) + "&count=10";
+
+    fetch(apiUrl)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.status === "ok" && data.items && data.items.length > 0) {
+          ytRenderVideos(data.items, kw);
+        } else {
+          ytRenderFallback(kw);
+        }
+      })
+      .catch(function () {
+        ytRenderFallback(kw);
+      });
+  }
+
+  function ytRenderVideos(items, kw) {
+    var list = document.getElementById("yt-video-list");
+    list.innerHTML = "";
+
+    items.forEach(function (item) {
+      var videoId = item.link ? item.link.replace("https://www.youtube.com/watch?v=", "") : "";
+      var thumb = videoId
+        ? "https://img.youtube.com/vi/" + videoId + "/mqdefault.jpg"
+        : "";
+
+      var a = document.createElement("a");
+      a.className = "yt-video-card";
+      a.href = item.link || "#";
+      a.target = "_blank";
+
+      if (thumb) {
+        var img = document.createElement("img");
+        img.className = "yt-video-thumb";
+        img.src = thumb;
+        img.alt = item.title;
+        img.onerror = function () { this.style.display = "none"; };
+        a.appendChild(img);
+      }
+
+      var info = document.createElement("div");
+      info.className = "yt-video-info";
+
+      var title = document.createElement("div");
+      title.className = "yt-video-title";
+      title.textContent = item.title || "";
+
+      var channel = document.createElement("div");
+      channel.className = "yt-video-channel";
+      channel.textContent = item.author || "";
+
+      info.appendChild(title);
+      info.appendChild(channel);
+      a.appendChild(info);
+      list.appendChild(a);
+    });
+  }
+
+  function ytRenderFallback(kw) {
+    var list = document.getElementById("yt-video-list");
+    list.innerHTML = "";
+
+    // rss2json 실패 시 유튜브 검색 링크 카드로 대체
+    var searchUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(kw) + "&sp=CAI%253D"; // 최신순 필터
+
+    var a = document.createElement("a");
+    a.className = "yt-video-card";
+    a.href = searchUrl;
+    a.target = "_blank";
+    a.style.padding = "16px";
+    a.innerHTML =
+      '<div style="font-size:32px;text-align:center;margin-bottom:8px;">▶</div>' +
+      '<div class="yt-video-title" style="text-align:center;">\"' + kw + '\" 유튜브 최신 영상 보기</div>' +
+      '<div class="yt-video-channel" style="text-align:center;margin-top:4px;">클릭하면 유튜브로 이동 (최신순)</div>';
+    list.appendChild(a);
+
+    // 관련 검색어 카드
+    var queries = [kw + " 주식", kw + " 분석", kw + " 투자", kw + " 뉴스"];
+    queries.forEach(function (q) {
+      var b = document.createElement("a");
+      b.className = "yt-video-card";
+      b.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(q) + "&sp=CAI%253D";
+      b.target = "_blank";
+      b.style.padding = "12px 16px";
+      b.innerHTML =
+        '<div class="yt-video-title">▶ \"' + q + '\" 검색하기</div>';
+      list.appendChild(b);
+    });
+  }
+
+  document.getElementById("yt-keyword-add-btn").onclick = function () {
+    var input = document.getElementById("yt-keyword-input");
+    var kw = input.value.trim();
+    if (!kw) return;
+    if (ytKwList.includes(kw)) { alert("이미 추가된 키워드입니다."); return; }
+    ytKwList.push(kw);
+    ytSaveKeywords();
+    ytActiveKw = kw;
+    ytRenderChips();
+    ytLoadVideos(kw);
+    input.value = "";
+  };
+
+  document.getElementById("yt-keyword-input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("yt-keyword-add-btn").click();
   });
 
   // ===== 키워드 뉴스 JS =====
