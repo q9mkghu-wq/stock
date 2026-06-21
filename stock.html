@@ -366,6 +366,56 @@
     flex: 1;
     align-items: flex-start;
   }
+  /* ===== 키워드 뉴스 패널 ===== */
+  .keyword-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .keyword-input-row input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--card-bg);
+  }
+  .keyword-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .keyword-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .keyword-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .keyword-chip-del {
+    font-size: 12px;
+    opacity: 0.6;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    line-height: 1;
+  }
+  .keyword-chip-del:hover { opacity: 1; }
+
   .slide-panel {
     flex: 0 0 380px;
     min-width: 300px;
@@ -612,6 +662,20 @@
       </div>
 
     </div><!-- /panels-container -->
+
+    <!-- 키워드 뉴스 패널 (고정) -->
+    <div class="slide-panel" id="slide-keyword-news" style="border-left:2px solid var(--border);">
+      <div class="panel-title-row">
+        <span>🔍 키워드 뉴스</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">키워드를 추가하면 항상 최신 뉴스를 볼 수 있어요.</p>
+      <div class="keyword-input-row">
+        <input type="text" id="keyword-input" placeholder="예: 삼성전자, 스페이스엑스...">
+        <button class="btn-primary" id="keyword-add-btn" style="flex:0 0 auto;padding:10px 14px;">추가</button>
+      </div>
+      <div class="keyword-chips" id="keyword-chips"></div>
+      <div id="keyword-news-list"><div class="empty-msg">키워드를 추가하고 선택하면<br>관련 뉴스 링크가 나타납니다.</div></div>
+    </div>
 
 </div><!-- /right-area -->
 
@@ -1549,6 +1613,132 @@
     document.querySelectorAll(".period-btn").forEach(function (b) { b.classList.remove("active"); });
     btn.classList.add("active");
     updateCharts(btn.dataset.range);
+  });
+
+  // ===== 키워드 뉴스 JS =====
+  var keywordRef = db.ref("keywordNews");
+  var kwList = [];
+  var kwActiveIdx = -1;
+
+  keywordRef.on("value", function (snap) {
+    var val = snap.val();
+    kwList = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    kwRenderChips();
+    if (kwActiveIdx >= 0 && kwActiveIdx < kwList.length) {
+      kwRenderNews(kwList[kwActiveIdx]);
+    }
+  });
+
+  function kwSave() {
+    keywordRef.set(kwList);
+  }
+
+  function kwRenderChips() {
+    var chips = document.getElementById("keyword-chips");
+    if (!chips) return;
+    chips.innerHTML = "";
+    if (kwList.length === 0) {
+      chips.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">아직 키워드가 없어요.</span>';
+      return;
+    }
+    kwList.forEach(function (kw, idx) {
+      var chip = document.createElement("div");
+      chip.className = "keyword-chip" + (idx === kwActiveIdx ? " active" : "");
+
+      var label = document.createElement("span");
+      label.textContent = kw;
+      label.onclick = function () {
+        kwActiveIdx = idx;
+        kwRenderChips();
+        kwRenderNews(kw);
+      };
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "keyword-chip-del";
+      delBtn.textContent = "✕";
+      delBtn.onclick = function (e) {
+        e.stopPropagation();
+        kwList.splice(idx, 1);
+        if (kwActiveIdx >= kwList.length) kwActiveIdx = kwList.length - 1;
+        kwSave();
+        kwRenderChips();
+        if (kwActiveIdx >= 0) kwRenderNews(kwList[kwActiveIdx]);
+        else document.getElementById("keyword-news-list").innerHTML = '<div class="empty-msg">키워드를 추가하고 선택하면<br>관련 뉴스 링크가 나타납니다.</div>';
+      };
+
+      chip.appendChild(label);
+      chip.appendChild(delBtn);
+      chips.appendChild(chip);
+    });
+  }
+
+  function kwRenderNews(kw) {
+    var list = document.getElementById("keyword-news-list");
+    if (!list) return;
+    var encodedKw = encodeURIComponent(kw);
+    var googleNewsUrl = "https://news.google.com/search?q=" + encodedKw + "&hl=ko&gl=KR&ceid=KR:ko";
+
+    list.innerHTML = "";
+
+    // 구글 뉴스 바로가기 버튼
+    var openBtn = document.createElement("a");
+    openBtn.href = googleNewsUrl;
+    openBtn.target = "_blank";
+    openBtn.className = "news-refresh-btn";
+    openBtn.style.display = "block";
+    openBtn.style.textAlign = "center";
+    openBtn.style.textDecoration = "none";
+    openBtn.style.marginBottom = "14px";
+    openBtn.textContent = "↗ \"" + kw + "\" 구글 뉴스 바로가기";
+    list.appendChild(openBtn);
+
+    // 관련 검색어 카드들
+    var relatedQueries = [
+      kw + " 주가",
+      kw + " 최신 뉴스",
+      kw + " 실적",
+      kw + " 전망",
+      kw + " 오늘"
+    ];
+
+    relatedQueries.forEach(function (q) {
+      var a = document.createElement("a");
+      a.className = "news-card";
+      a.href = "https://news.google.com/search?q=" + encodeURIComponent(q) + "&hl=ko&gl=KR&ceid=KR:ko";
+      a.target = "_blank";
+
+      var badge = document.createElement("div");
+      badge.className = "news-card-source";
+      badge.textContent = "구글 뉴스";
+
+      var title = document.createElement("div");
+      title.className = "news-card-title";
+      title.textContent = "\"" + q + "\" 관련 기사 보기 →";
+
+      a.appendChild(badge);
+      a.appendChild(title);
+      list.appendChild(a);
+    });
+  }
+
+  document.getElementById("keyword-add-btn").onclick = function () {
+    var input = document.getElementById("keyword-input");
+    var kw = input.value.trim();
+    if (!kw) return;
+    if (kwList.includes(kw)) {
+      alert("이미 추가된 키워드입니다.");
+      return;
+    }
+    kwList.push(kw);
+    kwSave();
+    kwActiveIdx = kwList.length - 1;
+    kwRenderChips();
+    kwRenderNews(kw);
+    input.value = "";
+  };
+
+  document.getElementById("keyword-input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("keyword-add-btn").click();
   });
 
   // ===== 패널 순서 변경 JS =====
