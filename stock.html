@@ -635,8 +635,8 @@
     <iframe data-symbol="NASDAQ%3ASOXX" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22NASDAQ%3ASOXX%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
   </div>
   <div class="chart-item">
-    <div class="chart-item-label">😨 VIX 공포지수</div>
-    <iframe data-symbol="TVC%3AVIX" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22TVC%3AVIX%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
+    <div class="chart-item-label">😨 VIX ETF (UVXY)</div>
+    <iframe data-symbol="NASDAQ%3AUVXY" src="https://s.tradingview.com/embed-widget/mini-symbol-overview/?locale=kr#%7B%22symbol%22%3A%22NASDAQ%3AUVXY%22%2C%22width%22%3A%22100%25%22%2C%22height%22%3A%22180%22%2C%22dateRange%22%3A%221D%22%2C%22colorTheme%22%3A%22light%22%2C%22isTransparent%22%3Atrue%2C%22autosize%22%3Afalse%7D" width="100%" height="200" frameborder="0" scrolling="no" style="display:block;" class="chart-iframe"></iframe>
   </div>
 </div><!-- /chart-bar -->
 
@@ -1643,6 +1643,12 @@
       color: "#E63946"
     },
     {
+      label: "😨 VIX 변동성 지수",
+      desc: "시장 공포 척도 (차트 바에서 UVXY로 확인)\n20이상 → 시장 불안\n30이상 → 공포 / 매수 기회 가능성",
+      url: "https://kr.investing.com/indices/volatility-s-p-500",
+      color: "#FF6B6B"
+    },
+    {
       label: "🏦 FOMC 기준금리",
       desc: "미국 연준 금리 결정\n금리인상 → 주식 하락압력\n금리인하 → 주식 상승기대",
       url: "https://kr.investing.com/central-banks/fed-rate-monitor",
@@ -1703,7 +1709,7 @@
     "AMEX%3ADIA",
     "FX_IDC%3AUSDKRW",
     "NASDAQ%3ASOXX",
-    "TVC%3AVIX"
+    "NASDAQ%3AUVXY"
   ];
   var currentRange = "1D";
 
