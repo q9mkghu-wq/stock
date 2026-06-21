@@ -661,21 +661,21 @@
         <div id="news-list"></div>
       </div>
 
-    </div><!-- /panels-container -->
+      <!-- 키워드 뉴스 패널 -->
+      <div class="slide-panel" id="slide-keyword-news" style="border-left:2px solid var(--border);">
+        <div class="panel-title-row">
+          <span>🔍 키워드 뉴스</span>
+        </div>
+        <p style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">키워드를 추가하면 항상 최신 뉴스를 볼 수 있어요.</p>
+        <div class="keyword-input-row">
+          <input type="text" id="keyword-input" placeholder="예: 삼성전자, 스페이스엑스...">
+          <button class="btn-primary" id="keyword-add-btn" style="flex:0 0 auto;padding:10px 14px;">추가</button>
+        </div>
+        <div class="keyword-chips" id="keyword-chips"></div>
+        <div id="keyword-news-list"><div class="empty-msg">키워드를 추가하고 선택하면<br>관련 뉴스 링크가 나타납니다.</div></div>
+      </div>
 
-    <!-- 키워드 뉴스 패널 (고정) -->
-    <div class="slide-panel" id="slide-keyword-news" style="border-left:2px solid var(--border);">
-      <div class="panel-title-row">
-        <span>🔍 키워드 뉴스</span>
-      </div>
-      <p style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">키워드를 추가하면 항상 최신 뉴스를 볼 수 있어요.</p>
-      <div class="keyword-input-row">
-        <input type="text" id="keyword-input" placeholder="예: 삼성전자, 스페이스엑스...">
-        <button class="btn-primary" id="keyword-add-btn" style="flex:0 0 auto;padding:10px 14px;">추가</button>
-      </div>
-      <div class="keyword-chips" id="keyword-chips"></div>
-      <div id="keyword-news-list"><div class="empty-msg">키워드를 추가하고 선택하면<br>관련 뉴스 링크가 나타납니다.</div></div>
-    </div>
+    </div><!-- /panels-container -->
 
 </div><!-- /right-area -->
 
