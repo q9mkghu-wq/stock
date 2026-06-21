@@ -2171,7 +2171,7 @@
       return;
     }
 
-    memoList.forEach(function (memo) {
+    memoList.forEach(function (memo, itemIdx) {
       var item = document.createElement("div");
       item.className = "memo-item";
       item.style.background = memo.bgColor || "#FFFFFF";
@@ -2261,6 +2261,35 @@
       var actions = document.createElement("div");
       actions.className = "memo-item-actions";
 
+      var upBtn = document.createElement("button");
+      upBtn.className = "icon-btn";
+      upBtn.textContent = "↑";
+      upBtn.title = "위로 이동";
+      upBtn.disabled = itemIdx === 0;
+      upBtn.onclick = function () {
+        if (itemIdx === 0) return;
+        // createdAt을 서로 바꿔서 정렬 순서 변경
+        var above = memoList[itemIdx - 1];
+        var current = memoList[itemIdx];
+        var tempTime = above.createdAt;
+        memoRef.child(above.id).update({ createdAt: current.createdAt });
+        memoRef.child(current.id).update({ createdAt: tempTime });
+      };
+
+      var downBtn = document.createElement("button");
+      downBtn.className = "icon-btn";
+      downBtn.textContent = "↓";
+      downBtn.title = "아래로 이동";
+      downBtn.disabled = itemIdx === memoList.length - 1;
+      downBtn.onclick = function () {
+        if (itemIdx === memoList.length - 1) return;
+        var below = memoList[itemIdx + 1];
+        var current = memoList[itemIdx];
+        var tempTime = below.createdAt;
+        memoRef.child(below.id).update({ createdAt: current.createdAt });
+        memoRef.child(current.id).update({ createdAt: tempTime });
+      };
+
       var editBtn = document.createElement("button");
       editBtn.className = "icon-btn";
       editBtn.textContent = "✎";
@@ -2287,6 +2316,8 @@
       delBtn.title = "삭제";
       delBtn.onclick = function () { memoDelete(memo.id); };
 
+      actions.appendChild(upBtn);
+      actions.appendChild(downBtn);
       actions.appendChild(editBtn);
       actions.appendChild(delBtn);
 
