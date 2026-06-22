@@ -762,6 +762,7 @@
               <button id="weather-load-btn" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">불러오기</button>
             </div>
           </div>
+          <div id="weather-saved-city" style="font-size:13px;color:var(--text-sub);margin-bottom:8px;display:none;">📍 저장된 지역: <b id="weather-saved-name"></b></div>
           <div id="weather-list"><div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">도시명을 입력하고 불러오기를 누르세요.</div></div>
         </div>
 
@@ -2596,20 +2597,57 @@
 
   var days = ["일","월","화","수","목","금","토"];
 
+  function showSavedCity(name) {
+    var savedDiv = document.getElementById("weather-saved-city");
+    var savedName = document.getElementById("weather-saved-name");
+    if (savedDiv && savedName && name) {
+      savedName.textContent = name;
+      savedDiv.style.display = "block";
+    }
+  }
+
+  var koreanCities = {
+    "서울": { lat: 37.5665, lon: 126.9780, name: "서울" },
+    "부산": { lat: 35.1796, lon: 129.0756, name: "부산" },
+    "인천": { lat: 37.4563, lon: 126.7052, name: "인천" },
+    "대구": { lat: 35.8714, lon: 128.6014, name: "대구" },
+    "대전": { lat: 36.3504, lon: 127.3845, name: "대전" },
+    "광주": { lat: 35.1595, lon: 126.8526, name: "광주" },
+    "수원": { lat: 37.2636, lon: 127.0286, name: "수원" },
+    "울산": { lat: 35.5384, lon: 129.3114, name: "울산" },
+    "제주": { lat: 33.4996, lon: 126.5312, name: "제주" },
+    "의정부": { lat: 37.7382, lon: 127.0337, name: "의정부" },
+    "성남": { lat: 37.4196, lon: 127.1266, name: "성남" },
+    "고양": { lat: 37.6584, lon: 126.8320, name: "고양" },
+    "창원": { lat: 35.2280, lon: 128.6811, name: "창원" },
+    "세종": { lat: 36.4801, lon: 127.2890, name: "세종" }
+  };
+
   function weatherLoadByCity(city) {
     var list = document.getElementById("weather-list");
     if (!list) return;
     list.innerHTML = '<div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">불러오는 중...</div>';
 
-    fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(city) + "&count=1&language=ko&format=json")
+    // 한국 주요 도시 직접 매핑
+    var cityTrim = city.trim();
+    if (koreanCities[cityTrim]) {
+      var loc = koreanCities[cityTrim];
+      weatherCityRef.set({ city: cityTrim, lat: loc.lat, lon: loc.lon, name: loc.name });
+      showSavedCity(loc.name);
+      weatherFetch(loc.lat, loc.lon, loc.name);
+      return;
+    }
+
+    fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(cityTrim) + "&count=1&language=ko&format=json")
       .then(function(r){ return r.json(); })
       .then(function(geo){
         if (!geo.results || geo.results.length === 0) {
-          list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">도시를 찾을 수 없어요. 영문으로 입력해보세요.</div>';
+          list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">도시를 찾을 수 없어요.<br>한국 도시: 서울, 부산, 인천, 대구, 대전, 광주, 수원, 울산, 제주, 의정부 등</div>';
           return;
         }
         var loc = geo.results[0];
-        weatherCityRef.set({ city: city, lat: loc.latitude, lon: loc.longitude, name: loc.name });
+        weatherCityRef.set({ city: cityTrim, lat: loc.latitude, lon: loc.longitude, name: loc.name });
+        showSavedCity(loc.name);
         weatherFetch(loc.latitude, loc.longitude, loc.name);
       })
       .catch(function(){
@@ -2688,6 +2726,7 @@
     if (val && val.lat && val.lon) {
       var input = document.getElementById("weather-city");
       if (input) input.value = val.city || "";
+      showSavedCity(val.name || val.city);
       weatherFetch(val.lat, val.lon, val.name || val.city);
     }
   });
