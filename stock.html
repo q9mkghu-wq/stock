@@ -2589,17 +2589,15 @@
   weatherCityRef.on("value", function(snap) {
     var val = snap.val();
     if (val) {
-      weatherCities = Object.keys(val).map(function(k) {
+      var newCities = Object.keys(val).map(function(k) {
         return Object.assign({ _key: k }, val[k]);
       }).filter(function(c) { return c && c.name && c.lat && c.lon; });
+      // 이미 로컬에 있는 경우 덮어쓰지 않음 (타이밍 문제 방지)
+      if (newCities.length > 0) weatherCities = newCities;
     } else {
       weatherCities = [];
     }
     weatherRenderChips();
-    if (weatherActiveIdx >= 0 && weatherActiveIdx < weatherCities.length) {
-      var loc = weatherCities[weatherActiveIdx];
-      weatherFetch(loc.lat, loc.lon, loc.name);
-    }
   });
 
   function weatherSaveCities() {
@@ -2663,7 +2661,7 @@
       } else {
         weatherActiveIdx = exists;
       }
-      weatherRenderChips();
+      weatherRenderChips(); // 즉시 칩 렌더링
       weatherFetch(lat, lon, name);
     }
 
