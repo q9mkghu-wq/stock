@@ -743,6 +743,23 @@
         </div>
       </div>
 
+      <!-- 날씨 패널 -->
+      <div class="slide-panel" id="slide-weather">
+        <div class="panel-title-row">
+          <span>⛅ 주간 날씨</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="weather" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="weather" data-dir="1">→</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+          <input type="text" id="weather-city" placeholder="도시명 (예: 서울, Busan)" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
+          <button id="weather-load-btn" style="padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">추가</button>
+        </div>
+        <div class="yt-keyword-chips" id="weather-city-chips"></div>
+        <div id="weather-list"><div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">도시를 추가하고 선택하세요.</div></div>
+      </div>
+
       <!-- 메모장 -->
       <div class="slide-panel" id="slide-memo">
         <div class="panel-title-row" id="title-memo">
@@ -752,18 +769,6 @@
             <button class="move-btn panel-lr-btn" data-id="memo" data-dir="1">→</button>
           </div>
         </div>
-
-        <!-- 날씨 섹션 -->
-        <div id="weather-section" style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid var(--border);">
-          <div style="font-size:21px;font-weight:700;margin-bottom:12px;">⛅ 주간 날씨</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
-            <input type="text" id="weather-city" placeholder="도시명 (예: 서울, Busan)" style="flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;">
-            <button id="weather-load-btn" style="padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">추가</button>
-          </div>
-          <div class="yt-keyword-chips" id="weather-city-chips"></div>
-          <div id="weather-list"><div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">도시를 추가하고 선택하세요.</div></div>
-        </div>
-
         <div class="memo-write-box">
           <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
           <button class="btn-primary" id="memo-submit">저장</button>
@@ -2239,7 +2244,7 @@
   // Firebase에서 저장된 순서 불러오기
   panelOrderRef.once("value", function (snap) {
     var val = snap.val();
-    if (val && Array.isArray(val) && val.length === 4) {
+    if (val && Array.isArray(val) && val.length === 5) {
       applyPanelOrder(val);
     } else {
       updatePanelBtns();
