@@ -2589,6 +2589,8 @@
   weatherCityRef.on("value", function(snap) {
     var val = snap.val();
     weatherCities = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
+    // name이 없는 항목 필터링
+    weatherCities = weatherCities.filter(function(c) { return c && c.name && c.lat && c.lon; });
     weatherRenderChips();
     if (weatherActiveIdx >= 0 && weatherActiveIdx < weatherCities.length) {
       weatherFetch(weatherCities[weatherActiveIdx].lat, weatherCities[weatherActiveIdx].lon, weatherCities[weatherActiveIdx].name);
