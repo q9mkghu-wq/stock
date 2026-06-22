@@ -2583,22 +2583,32 @@
 
   // ===== 날씨 JS =====
   var weatherCityRef = db.ref("weatherCities");
-  var weatherCities = []; // [{city, lat, lon, name}, ...]
+  var weatherCities = [];
   var weatherActiveIdx = -1;
 
   weatherCityRef.on("value", function(snap) {
     var val = snap.val();
-    weatherCities = val ? (Array.isArray(val) ? val : Object.values(val)) : [];
-    // name이 없는 항목 필터링
-    weatherCities = weatherCities.filter(function(c) { return c && c.name && c.lat && c.lon; });
+    if (val) {
+      weatherCities = Object.keys(val).map(function(k) {
+        return Object.assign({ _key: k }, val[k]);
+      }).filter(function(c) { return c && c.name && c.lat && c.lon; });
+    } else {
+      weatherCities = [];
+    }
     weatherRenderChips();
     if (weatherActiveIdx >= 0 && weatherActiveIdx < weatherCities.length) {
-      weatherFetch(weatherCities[weatherActiveIdx].lat, weatherCities[weatherActiveIdx].lon, weatherCities[weatherActiveIdx].name);
+      var loc = weatherCities[weatherActiveIdx];
+      weatherFetch(loc.lat, loc.lon, loc.name);
     }
   });
 
   function weatherSaveCities() {
-    weatherCityRef.set(weatherCities);
+    // 배열 대신 push 방식으로 저장 (Firebase 배열 문제 방지)
+    var obj = {};
+    weatherCities.forEach(function(c, i) {
+      obj["city_" + i] = { city: c.city, lat: c.lat, lon: c.lon, name: c.name };
+    });
+    weatherCityRef.set(obj);
   }
 
   function weatherRenderChips() {
@@ -2637,23 +2647,29 @@
     });
   }
 
-  function showSavedCity(name) {}  // 더 이상 사용 안 함
-
   function weatherLoadByCity(city) {
     var list = document.getElementById("weather-list");
     if (!list) return;
     list.innerHTML = '<div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">불러오는 중...</div>';
 
     var cityTrim = city.trim();
+
+    function addAndShow(name, lat, lon) {
+      var exists = weatherCities.findIndex(function(c) { return c.name === name; });
+      if (exists === -1) {
+        weatherCities.push({ city: cityTrim, lat: lat, lon: lon, name: name });
+        weatherSaveCities();
+        weatherActiveIdx = weatherCities.length - 1;
+      } else {
+        weatherActiveIdx = exists;
+      }
+      weatherRenderChips();
+      weatherFetch(lat, lon, name);
+    }
+
     if (koreanCities[cityTrim]) {
       var loc = koreanCities[cityTrim];
-      if (!weatherCities.find(function(c){ return c.name === loc.name; })) {
-        weatherCities.push({ city: cityTrim, lat: loc.lat, lon: loc.lon, name: loc.name });
-        weatherSaveCities();
-      }
-      weatherActiveIdx = weatherCities.findIndex(function(c){ return c.name === loc.name; });
-      weatherRenderChips();
-      weatherFetch(loc.lat, loc.lon, loc.name);
+      addAndShow(loc.name, loc.lat, loc.lon);
       return;
     }
 
@@ -2665,13 +2681,7 @@
           return;
         }
         var found = geo.results[0];
-        if (!weatherCities.find(function(c){ return c.name === found.name; })) {
-          weatherCities.push({ city: cityTrim, lat: found.latitude, lon: found.longitude, name: found.name });
-          weatherSaveCities();
-        }
-        weatherActiveIdx = weatherCities.findIndex(function(c){ return c.name === found.name; });
-        weatherRenderChips();
-        weatherFetch(found.latitude, found.longitude, found.name);
+        addAndShow(found.name, found.latitude, found.longitude);
       })
       .catch(function(){
         list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">네트워크 오류가 발생했어요.</div>';
