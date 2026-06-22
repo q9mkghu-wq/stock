@@ -752,6 +752,19 @@
             <button class="move-btn panel-lr-btn" data-id="memo" data-dir="1">→</button>
           </div>
         </div>
+
+        <!-- 날씨 섹션 -->
+        <div id="weather-section" style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid var(--border);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <div style="font-size:21px;font-weight:700;">⛅ 주간 날씨</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="text" id="weather-city" placeholder="도시명 (예: Seoul)" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;width:110px;">
+              <button id="weather-load-btn" style="padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">불러오기</button>
+            </div>
+          </div>
+          <div id="weather-list"><div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">도시명을 입력하고 불러오기를 누르세요.</div></div>
+        </div>
+
         <div class="memo-write-box">
           <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
           <button class="btn-primary" id="memo-submit">저장</button>
@@ -2568,6 +2581,116 @@
     memoInputEl.style.resize = "none";
     memoInputEl.addEventListener("input", function () { autoResize(this); });
   }
+
+  // ===== 날씨 JS =====
+  var weatherCityRef = db.ref("weatherCity");
+  var weatherCodeMap = {
+    0:"☀️ 맑음", 1:"🌤️ 대체로 맑음", 2:"⛅ 구름 조금", 3:"☁️ 흐림",
+    45:"🌫️ 안개", 48:"🌫️ 짙은 안개",
+    51:"🌦️ 이슬비", 53:"🌦️ 이슬비", 55:"🌦️ 이슬비",
+    61:"🌧️ 비", 63:"🌧️ 비", 65:"🌧️ 강한 비",
+    71:"🌨️ 눈", 73:"🌨️ 눈", 75:"🌨️ 강한 눈",
+    80:"🌦️ 소나기", 81:"🌦️ 소나기", 82:"⛈️ 강한 소나기",
+    95:"⛈️ 천둥번개", 96:"⛈️ 우박", 99:"⛈️ 심한 우박"
+  };
+
+  var days = ["일","월","화","수","목","금","토"];
+
+  function weatherLoadByCity(city) {
+    var list = document.getElementById("weather-list");
+    if (!list) return;
+    list.innerHTML = '<div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">불러오는 중...</div>';
+
+    fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(city) + "&count=1&language=ko&format=json")
+      .then(function(r){ return r.json(); })
+      .then(function(geo){
+        if (!geo.results || geo.results.length === 0) {
+          list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">도시를 찾을 수 없어요. 영문으로 입력해보세요.</div>';
+          return;
+        }
+        var loc = geo.results[0];
+        weatherCityRef.set({ city: city, lat: loc.latitude, lon: loc.longitude, name: loc.name });
+        weatherFetch(loc.latitude, loc.longitude, loc.name);
+      })
+      .catch(function(){
+        list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">네트워크 오류가 발생했어요.</div>';
+      });
+  }
+
+  function weatherFetch(lat, lon, name) {
+    var list = document.getElementById("weather-list");
+    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
+      "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=7";
+
+    fetch(url)
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (!data.daily) throw new Error();
+        var daily = data.daily;
+        list.innerHTML = "";
+
+        // 지역명
+        var cityLabel = document.createElement("div");
+        cityLabel.style.cssText = "font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px;";
+        cityLabel.textContent = "📍 " + name;
+        list.appendChild(cityLabel);
+
+        // 날씨 카드들
+        var grid = document.createElement("div");
+        grid.style.cssText = "display:grid;grid-template-columns:repeat(7,1fr);gap:4px;";
+
+        for (var i = 0; i < 7; i++) {
+          var date = new Date(daily.time[i]);
+          var dow = days[date.getDay()];
+          var code = daily.weathercode[i];
+          var icon = weatherCodeMap[code] ? weatherCodeMap[code].split(" ")[0] : "❓";
+          var desc = weatherCodeMap[code] ? weatherCodeMap[code].split(" ").slice(1).join(" ") : "";
+          var tmax = daily.temperature_2m_max[i];
+          var tmin = daily.temperature_2m_min[i];
+          var rain = daily.precipitation_probability_max[i];
+
+          var card = document.createElement("div");
+          var isToday = i === 0;
+          card.style.cssText = "background:" + (isToday ? "var(--accent)" : "var(--card-bg)") +
+            ";color:" + (isToday ? "#fff" : "var(--text-main)") +
+            ";border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center;";
+
+          card.innerHTML =
+            "<div style='font-size:12px;font-weight:700;margin-bottom:2px;'>" + (isToday ? "오늘" : dow) + "</div>" +
+            "<div style='font-size:11px;margin-bottom:4px;opacity:0.7;'>" + daily.time[i].slice(5) + "</div>" +
+            "<div style='font-size:22px;'>" + icon + "</div>" +
+            "<div style='font-size:11px;margin-top:2px;font-weight:700;color:" + (isToday ? "#fff" : "#E63946") + ";'>" + Math.round(tmax) + "°</div>" +
+            "<div style='font-size:11px;color:" + (isToday ? "rgba(255,255,255,0.8)" : "#457B9D") + ";'>" + Math.round(tmin) + "°</div>" +
+            "<div style='font-size:10px;margin-top:2px;color:" + (isToday ? "rgba(255,255,255,0.8)" : "var(--text-sub)") + ";'>💧" + rain + "%</div>";
+
+          grid.appendChild(card);
+        }
+        list.appendChild(grid);
+      })
+      .catch(function(){
+        list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">날씨를 불러올 수 없어요.</div>';
+      });
+  }
+
+  document.getElementById("weather-load-btn").onclick = function() {
+    var city = document.getElementById("weather-city").value.trim();
+    if (!city) { alert("도시명을 입력해주세요."); return; }
+    weatherLoadByCity(city);
+  };
+
+  document.getElementById("weather-city").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") document.getElementById("weather-load-btn").click();
+  });
+
+  // 저장된 도시가 있으면 자동 로드
+  weatherCityRef.once("value", function(snap) {
+    var val = snap.val();
+    if (val && val.lat && val.lon) {
+      var input = document.getElementById("weather-city");
+      if (input) input.value = val.city || "";
+      weatherFetch(val.lat, val.lon, val.name || val.city);
+    }
+  });
 
   // ===== 메모장 JS =====
   var memoRef = db.ref("memopad");
