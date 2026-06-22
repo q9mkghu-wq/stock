@@ -2582,247 +2582,114 @@
   }
 
   // ===== 날씨 JS =====
-  // ===== 날씨 JS =====
-  var weatherCities = [];
-  var weatherActiveIdx = -1;
+  var _wCities = [];
+  try { var _ws = localStorage.getItem("wCities2"); if(_ws) _wCities = JSON.parse(_ws); } catch(e){}
+  var _wIdx = -1;
 
-  function weatherInit() {
-    try {
-      var saved = localStorage.getItem("weatherCities");
-      if (saved) weatherCities = JSON.parse(saved);
-    } catch(e) {}
+  var _wCodeMap = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",73:"🌨️",75:"🌨️",80:"🌦️",81:"🌦️",82:"⛈️",95:"⛈️",96:"⛈️",99:"⛈️"};
+  var _wCodeDesc = {0:"맑음",1:"대체로맑음",2:"구름조금",3:"흐림",45:"안개",48:"안개",51:"이슬비",53:"이슬비",55:"이슬비",61:"비",63:"비",65:"강한비",71:"눈",73:"눈",75:"강한눈",80:"소나기",81:"소나기",82:"소나기",95:"천둥번개",96:"우박",99:"우박"};
+  var _wDays = ["일","월","화","수","목","금","토"];
+  var _wKorean = {"서울":{lat:37.5665,lon:126.9780,name:"서울"},"부산":{lat:35.1796,lon:129.0756,name:"부산"},"인천":{lat:37.4563,lon:126.7052,name:"인천"},"대구":{lat:35.8714,lon:128.6014,name:"대구"},"대전":{lat:36.3504,lon:127.3845,name:"대전"},"광주":{lat:35.1595,lon:126.8526,name:"광주"},"수원":{lat:37.2636,lon:127.0286,name:"수원"},"울산":{lat:35.5384,lon:129.3114,name:"울산"},"제주":{lat:33.4996,lon:126.5312,name:"제주"},"의정부":{lat:37.7382,lon:127.0337,name:"의정부"},"성남":{lat:37.4196,lon:127.1266,name:"성남"},"고양":{lat:37.6584,lon:126.8320,name:"고양"},"창원":{lat:35.2280,lon:128.6811,name:"창원"},"세종":{lat:36.4801,lon:127.2890,name:"세종"}};
 
-    weatherRenderChips();
-    if (weatherCities.length > 0) {
-      weatherActiveIdx = 0;
-      weatherRenderChips();
-      weatherFetch(weatherCities[0].lat, weatherCities[0].lon, weatherCities[0].name);
-    }
-
-    var loadBtn = document.getElementById("weather-load-btn");
-    if (loadBtn) {
-      loadBtn.onclick = function() {
-        var city = document.getElementById("weather-city").value.trim();
-        if (!city) { alert("도시명을 입력해주세요."); return; }
-        weatherLoadByCity(city);
-        document.getElementById("weather-city").value = "";
-      };
-    }
-
-    var cityInput = document.getElementById("weather-city");
-    if (cityInput) {
-      cityInput.addEventListener("keydown", function(e) {
-        if (e.key === "Enter") document.getElementById("weather-load-btn").click();
-      });
-    }
+  function _wSave() {
+    try { localStorage.setItem("wCities2", JSON.stringify(_wCities)); } catch(e) {}
   }
 
-  // Firebase 로드 완료 후 실행
-  dbRef.once("value", function() {
-    weatherInit();
-  });
-
-  function weatherRenderChips() {
-    var chips = document.getElementById("weather-city-chips");
-    if (!chips) return;
-    chips.innerHTML = "";
-    if (weatherCities.length === 0) {
-      chips.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">아직 저장된 도시가 없어요.</span>';
+  function _wRenderChips() {
+    var el = document.getElementById("weather-city-chips");
+    if (!el) return;
+    el.innerHTML = "";
+    if (_wCities.length === 0) {
+      el.innerHTML = '<span style="font-size:12px;color:var(--text-sub);">도시를 추가하세요.</span>';
       return;
     }
-    weatherCities.forEach(function(loc, idx) {
+    _wCities.forEach(function(loc, idx) {
       var chip = document.createElement("div");
-      chip.className = "keyword-chip" + (idx === weatherActiveIdx ? " active" : "");
-
-      var label = document.createElement("span");
-      label.textContent = loc.name;
-      label.onclick = function() {
-        weatherActiveIdx = idx;
-        weatherRenderChips();
-        weatherFetch(loc.lat, loc.lon, loc.name);
-      };
-
-      var delBtn = document.createElement("button");
-      delBtn.className = "keyword-chip-del";
-      delBtn.textContent = "✕";
-      delBtn.onclick = function(e) {
+      chip.className = "keyword-chip" + (idx === _wIdx ? " active" : "");
+      var lbl = document.createElement("span");
+      lbl.textContent = loc.name;
+      lbl.onclick = function() { _wIdx = idx; _wRenderChips(); _wFetch(loc.lat, loc.lon, loc.name); };
+      var del = document.createElement("button");
+      del.className = "keyword-chip-del";
+      del.textContent = "✕";
+      del.onclick = function(e) {
         e.stopPropagation();
-        weatherCities.splice(idx, 1);
-        if (weatherActiveIdx >= weatherCities.length) weatherActiveIdx = weatherCities.length - 1;
-        weatherSaveCities();
+        _wCities.splice(idx, 1);
+        if (_wIdx >= _wCities.length) _wIdx = _wCities.length - 1;
+        _wSave();
+        _wRenderChips();
+        if (_wIdx >= 0 && _wCities[_wIdx]) _wFetch(_wCities[_wIdx].lat, _wCities[_wIdx].lon, _wCities[_wIdx].name);
+        else document.getElementById("weather-list").innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-sub);">도시를 추가하세요.</div>';
       };
-
-      chip.appendChild(label);
-      chip.appendChild(delBtn);
-      chips.appendChild(chip);
+      chip.appendChild(lbl);
+      chip.appendChild(del);
+      el.appendChild(chip);
     });
   }
 
-  function weatherLoadByCity(city) {
+  function _wFetch(lat, lon, name) {
     var list = document.getElementById("weather-list");
     if (!list) return;
-    list.innerHTML = '<div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">불러오는 중...</div>';
-
-    var cityTrim = city.trim();
-
-    function addAndShow(name, lat, lon) {
-      var exists = weatherCities.findIndex(function(c) { return c.name === name; });
-      if (exists === -1) {
-        weatherCities.push({ city: cityTrim, lat: lat, lon: lon, name: name });
-        weatherSaveCities();
-        weatherActiveIdx = weatherCities.length - 1;
-      } else {
-        weatherActiveIdx = exists;
-      }
-      weatherRenderChips(); // 즉시 칩 렌더링
-      weatherFetch(lat, lon, name);
-    }
-
-    if (koreanCities[cityTrim]) {
-      var loc = koreanCities[cityTrim];
-      addAndShow(loc.name, loc.lat, loc.lon);
-      return;
-    }
-
-    fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(cityTrim) + "&count=1&language=ko&format=json")
-      .then(function(r){ return r.json(); })
-      .then(function(geo){
-        if (!geo.results || geo.results.length === 0) {
-          list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">도시를 찾을 수 없어요.<br>한국 도시: 서울, 부산, 인천, 대구, 대전, 광주, 수원, 울산, 제주 등</div>';
-          return;
-        }
-        var found = geo.results[0];
-        addAndShow(found.name, found.latitude, found.longitude);
-      })
-      .catch(function(){
-        list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">네트워크 오류가 발생했어요.</div>';
-      });
-  }
-
-  var weatherCodeMap = {
-    0:"☀️ 맑음", 1:"🌤️ 대체로 맑음", 2:"⛅ 구름 조금", 3:"☁️ 흐림",
-    45:"🌫️ 안개", 48:"🌫️ 짙은 안개",
-    51:"🌦️ 이슬비", 53:"🌦️ 이슬비", 55:"🌦️ 이슬비",
-    61:"🌧️ 비", 63:"🌧️ 비", 65:"🌧️ 강한 비",
-    71:"🌨️ 눈", 73:"🌨️ 눈", 75:"🌨️ 강한 눈",
-    80:"🌦️ 소나기", 81:"🌦️ 소나기", 82:"⛈️ 강한 소나기",
-    95:"⛈️ 천둥번개", 96:"⛈️ 우박", 99:"⛈️ 심한 우박"
-  };
-
-  var days = ["일","월","화","수","목","금","토"];
-
-  function showSavedCity(name) {
-    var savedDiv = document.getElementById("weather-saved-city");
-    var savedName = document.getElementById("weather-saved-name");
-    if (savedDiv && savedName && name) {
-      savedName.textContent = name;
-      savedDiv.style.display = "block";
-    }
-  }
-
-  var koreanCities = {
-    "서울": { lat: 37.5665, lon: 126.9780, name: "서울" },
-    "부산": { lat: 35.1796, lon: 129.0756, name: "부산" },
-    "인천": { lat: 37.4563, lon: 126.7052, name: "인천" },
-    "대구": { lat: 35.8714, lon: 128.6014, name: "대구" },
-    "대전": { lat: 36.3504, lon: 127.3845, name: "대전" },
-    "광주": { lat: 35.1595, lon: 126.8526, name: "광주" },
-    "수원": { lat: 37.2636, lon: 127.0286, name: "수원" },
-    "울산": { lat: 35.5384, lon: 129.3114, name: "울산" },
-    "제주": { lat: 33.4996, lon: 126.5312, name: "제주" },
-    "의정부": { lat: 37.7382, lon: 127.0337, name: "의정부" },
-    "성남": { lat: 37.4196, lon: 127.1266, name: "성남" },
-    "고양": { lat: 37.6584, lon: 126.8320, name: "고양" },
-    "창원": { lat: 35.2280, lon: 128.6811, name: "창원" },
-    "세종": { lat: 36.4801, lon: 127.2890, name: "세종" }
-  };
-
-  function weatherLoadByCity(city) {
-    var list = document.getElementById("weather-list");
-    if (!list) return;
-    list.innerHTML = '<div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">불러오는 중...</div>';
-
-    // 한국 주요 도시 직접 매핑
-    var cityTrim = city.trim();
-    if (koreanCities[cityTrim]) {
-      var loc = koreanCities[cityTrim];
-      weatherCityRef.set({ city: cityTrim, lat: loc.lat, lon: loc.lon, name: loc.name });
-      showSavedCity(loc.name);
-      weatherFetch(loc.lat, loc.lon, loc.name);
-      return;
-    }
-
-    fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(cityTrim) + "&count=1&language=ko&format=json")
-      .then(function(r){ return r.json(); })
-      .then(function(geo){
-        if (!geo.results || geo.results.length === 0) {
-          list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">도시를 찾을 수 없어요.<br>한국 도시: 서울, 부산, 인천, 대구, 대전, 광주, 수원, 울산, 제주, 의정부 등</div>';
-          return;
-        }
-        var loc = geo.results[0];
-        weatherCityRef.set({ city: cityTrim, lat: loc.latitude, lon: loc.longitude, name: loc.name });
-        showSavedCity(loc.name);
-        weatherFetch(loc.latitude, loc.longitude, loc.name);
-      })
-      .catch(function(){
-        list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">네트워크 오류가 발생했어요.</div>';
-      });
-  }
-
-  function weatherFetch(lat, lon, name) {
-    var list = document.getElementById("weather-list");
-    var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon +
-      "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=7";
-
-    fetch(url)
-      .then(function(r){ return r.json(); })
+    list.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-sub);">불러오는 중...</div>';
+    fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=7")
+      .then(function(r){return r.json();})
       .then(function(data){
         if (!data.daily) throw new Error();
-        var daily = data.daily;
-        list.innerHTML = "";
-
-        // 지역명
-        var cityLabel = document.createElement("div");
-        cityLabel.style.cssText = "font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px;";
-        cityLabel.textContent = "📍 " + name;
-        list.appendChild(cityLabel);
-
-        // 날씨 카드들
+        var d = data.daily; list.innerHTML = "";
+        var cityLbl = document.createElement("div");
+        cityLbl.style.cssText = "font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px;";
+        cityLbl.textContent = "📍 "+name; list.appendChild(cityLbl);
         var grid = document.createElement("div");
         grid.style.cssText = "display:grid;grid-template-columns:repeat(7,1fr);gap:4px;";
-
-        for (var i = 0; i < 7; i++) {
-          var date = new Date(daily.time[i]);
-          var dow = days[date.getDay()];
-          var code = daily.weathercode[i];
-          var icon = weatherCodeMap[code] ? weatherCodeMap[code].split(" ")[0] : "❓";
-          var desc = weatherCodeMap[code] ? weatherCodeMap[code].split(" ").slice(1).join(" ") : "";
-          var tmax = daily.temperature_2m_max[i];
-          var tmin = daily.temperature_2m_min[i];
-          var rain = daily.precipitation_probability_max[i];
-
+        for (var i=0;i<7;i++){
+          var dt = new Date(d.time[i]);
+          var dow = _wDays[dt.getDay()];
+          var code = d.weathercode[i];
+          var icon = _wCodeMap[code]||"❓";
+          var tmax = Math.round(d.temperature_2m_max[i]);
+          var tmin = Math.round(d.temperature_2m_min[i]);
+          var rain = d.precipitation_probability_max[i];
+          var isToday = i===0;
           var card = document.createElement("div");
-          var isToday = i === 0;
-          card.style.cssText = "background:" + (isToday ? "var(--accent)" : "var(--card-bg)") +
-            ";color:" + (isToday ? "#fff" : "var(--text-main)") +
-            ";border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center;";
-
-          card.innerHTML =
-            "<div style='font-size:12px;font-weight:700;margin-bottom:2px;'>" + (isToday ? "오늘" : dow) + "</div>" +
-            "<div style='font-size:11px;margin-bottom:4px;opacity:0.7;'>" + daily.time[i].slice(5) + "</div>" +
-            "<div style='font-size:22px;'>" + icon + "</div>" +
-            "<div style='font-size:11px;margin-top:2px;font-weight:700;color:" + (isToday ? "#fff" : "#E63946") + ";'>" + Math.round(tmax) + "°</div>" +
-            "<div style='font-size:11px;color:" + (isToday ? "rgba(255,255,255,0.8)" : "#457B9D") + ";'>" + Math.round(tmin) + "°</div>" +
-            "<div style='font-size:10px;margin-top:2px;color:" + (isToday ? "rgba(255,255,255,0.8)" : "var(--text-sub)") + ";'>💧" + rain + "%</div>";
-
+          card.style.cssText = "background:"+(isToday?"var(--accent)":"var(--card-bg)")+";color:"+(isToday?"#fff":"var(--text-main)")+";border:1px solid var(--border);border-radius:10px;padding:8px 4px;text-align:center;";
+          card.innerHTML = "<div style='font-size:12px;font-weight:700;'>"+(isToday?"오늘":dow)+"</div><div style='font-size:10px;opacity:0.7;'>"+d.time[i].slice(5)+"</div><div style='font-size:22px;'>"+icon+"</div><div style='font-size:11px;font-weight:700;color:"+(isToday?"#fff":"#E63946")+";'>"+tmax+"°</div><div style='font-size:11px;color:"+(isToday?"rgba(255,255,255,0.8)":"#457B9D")+";'>"+tmin+"°</div><div style='font-size:10px;color:"+(isToday?"rgba(255,255,255,0.8)":"var(--text-sub)")+";'>💧"+rain+"%</div>";
           grid.appendChild(card);
         }
         list.appendChild(grid);
       })
-      .catch(function(){
-        list.innerHTML = '<div style="font-size:13px;color:red;text-align:center;padding:16px 0;">날씨를 불러올 수 없어요.</div>';
-      });
+      .catch(function(){list.innerHTML='<div style="color:red;text-align:center;padding:12px;">날씨를 불러올 수 없어요.</div>';});
   }
+
+  function _wAddCity(city) {
+    var list = document.getElementById("weather-list");
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center;padding:12px;color:var(--text-sub);">불러오는 중...</div>';
+    function doAdd(name, lat, lon) {
+      var exists = _wCities.findIndex(function(c){return c.name===name;});
+      if (exists === -1) { _wCities.push({city:city,lat:lat,lon:lon,name:name}); _wSave(); _wIdx = _wCities.length-1; }
+      else { _wIdx = exists; }
+      _wRenderChips();
+      _wFetch(lat, lon, name);
+    }
+    if (_wKorean[city]) { var k=_wKorean[city]; doAdd(k.name,k.lat,k.lon); return; }
+    fetch("https://geocoding-api.open-meteo.com/v1/search?name="+encodeURIComponent(city)+"&count=1&language=ko&format=json")
+      .then(function(r){return r.json();})
+      .then(function(geo){
+        if (!geo.results||geo.results.length===0){list.innerHTML='<div style="color:red;text-align:center;padding:12px;">도시를 찾을 수 없어요.</div>';return;}
+        var f=geo.results[0]; doAdd(f.name,f.latitude,f.longitude);
+      })
+      .catch(function(){list.innerHTML='<div style="color:red;text-align:center;padding:12px;">네트워크 오류</div>';});
+  }
+
+  // 초기화 - 즉시 실행
+  (function(){
+    _wRenderChips();
+    if (_wCities.length > 0) { _wIdx=0; _wRenderChips(); _wFetch(_wCities[0].lat,_wCities[0].lon,_wCities[0].name); }
+    var btn = document.getElementById("weather-load-btn");
+    var inp = document.getElementById("weather-city");
+    if (btn) btn.onclick = function(){ var c=inp.value.trim(); if(!c)return; _wAddCity(c); inp.value=""; };
+    if (inp) inp.addEventListener("keydown",function(e){if(e.key==="Enter")btn.click();});
+  })();
 
   // ===== 메모장 JS =====
   var memoRef = db.ref("memopad");
