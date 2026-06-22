@@ -2010,8 +2010,7 @@
     var list = document.getElementById("yt-video-list");
     list.innerHTML = "";
 
-    // rss2json 실패 시 유튜브 검색 링크 카드로 대체
-    var searchUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(kw) + "&sp=CAI%253D"; // 최신순 필터
+    var searchUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(kw) + "&sp=CAI%253D";
 
     var a = document.createElement("a");
     a.className = "yt-video-card";
@@ -2023,19 +2022,6 @@
       '<div class="yt-video-title" style="text-align:center;">\"' + kw + '\" 유튜브 최신 영상 보기</div>' +
       '<div class="yt-video-channel" style="text-align:center;margin-top:4px;">클릭하면 유튜브로 이동 (최신순)</div>';
     list.appendChild(a);
-
-    // 관련 검색어 카드
-    var queries = [kw + " 주식", kw + " 분석", kw + " 투자", kw + " 뉴스"];
-    queries.forEach(function (q) {
-      var b = document.createElement("a");
-      b.className = "yt-video-card";
-      b.href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(q) + "&sp=CAI%253D";
-      b.target = "_blank";
-      b.style.padding = "12px 16px";
-      b.innerHTML =
-        '<div class="yt-video-title">▶ \"' + q + '\" 검색하기</div>';
-      list.appendChild(b);
-    });
   }
 
   document.getElementById("yt-keyword-add-btn").onclick = function () {
