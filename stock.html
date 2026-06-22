@@ -563,6 +563,12 @@
     display: flex; align-items: center; justify-content: center;
   }
   .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .memo-icon-btn {
+    background: none; border: 1px solid var(--border); border-radius: 10px;
+    width: 48px; height: 48px; font-size: 22px; cursor: pointer; color: var(--text-sub);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .memo-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
   .lb-add-form {
     background: var(--card-bg); border: 1px solid var(--border);
     border-radius: 12px; padding: 16px; margin-bottom: 16px;
@@ -2700,13 +2706,12 @@
       actions.className = "memo-item-actions";
 
       var upBtn = document.createElement("button");
-      upBtn.className = "icon-btn";
+      upBtn.className = "memo-icon-btn";
       upBtn.textContent = "↑";
       upBtn.title = "위로 이동";
       upBtn.disabled = itemIdx === 0;
       upBtn.onclick = function () {
         if (itemIdx === 0) return;
-        // createdAt을 서로 바꿔서 정렬 순서 변경
         var above = memoList[itemIdx - 1];
         var current = memoList[itemIdx];
         var tempTime = above.createdAt;
@@ -2715,7 +2720,7 @@
       };
 
       var downBtn = document.createElement("button");
-      downBtn.className = "icon-btn";
+      downBtn.className = "memo-icon-btn";
       downBtn.textContent = "↓";
       downBtn.title = "아래로 이동";
       downBtn.disabled = itemIdx === memoList.length - 1;
@@ -2729,7 +2734,7 @@
       };
 
       var editBtn = document.createElement("button");
-      editBtn.className = "icon-btn";
+      editBtn.className = "memo-icon-btn";
       editBtn.textContent = "✎";
       editBtn.title = "수정";
       editBtn.onclick = function () {
@@ -2750,7 +2755,7 @@
       };
 
       var delBtn = document.createElement("button");
-      delBtn.className = "icon-btn";
+      delBtn.className = "memo-icon-btn";
       delBtn.textContent = "✕";
       delBtn.title = "삭제";
       delBtn.onclick = function () { memoDelete(memo.id); };
