@@ -1032,7 +1032,7 @@
     wrap.style.gap = "8px";
     wrap.style.marginBottom = "10px";
 
-    stocks.forEach(function (s) {
+    stocks.forEach(function (s, stockIdx) {
       var row = document.createElement("div");
       row.style.display = "flex";
       row.style.justifyContent = "space-between";
@@ -1175,12 +1175,128 @@
       right.appendChild(naverBtn);
       right.appendChild(totalEl);
 
+      // ↑↓ 삭제 버튼
+      var btnGroup = document.createElement("div");
+      btnGroup.style.cssText = "display:flex;flex-direction:column;gap:3px;flex-shrink:0;";
+
+      var upBtn = document.createElement("button");
+      upBtn.className = "move-btn";
+      upBtn.textContent = "↑";
+      upBtn.disabled = stockIdx === 0;
+      upBtn.onclick = function() {
+        var tmp = stocks[stockIdx];
+        stocks[stockIdx] = stocks[stockIdx - 1];
+        stocks[stockIdx - 1] = tmp;
+        saveData(data);
+        renderTickerTape();
+        renderSections();
+      };
+
+      var downBtn = document.createElement("button");
+      downBtn.className = "move-btn";
+      downBtn.textContent = "↓";
+      downBtn.disabled = stockIdx === stocks.length - 1;
+      downBtn.onclick = function() {
+        var tmp = stocks[stockIdx];
+        stocks[stockIdx] = stocks[stockIdx + 1];
+        stocks[stockIdx + 1] = tmp;
+        saveData(data);
+        renderTickerTape();
+        renderSections();
+      };
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "move-btn";
+      delBtn.textContent = "✕";
+      delBtn.style.color = "var(--accent)";
+      delBtn.onclick = function() {
+        if (!confirm(s.name + "을(를) 삭제하시겠습니까?")) return;
+        stocks.splice(stockIdx, 1);
+        saveData(data);
+        renderTickerTape();
+        renderSections();
+      };
+
+      btnGroup.appendChild(upBtn);
+      btnGroup.appendChild(downBtn);
+      btnGroup.appendChild(delBtn);
+
       row.appendChild(left);
       row.appendChild(right);
+      row.appendChild(btnGroup);
       wrap.appendChild(row);
     });
 
     outer.appendChild(wrap);
+
+    // 종목 추가 폼
+    var addForm = document.createElement("div");
+    addForm.style.cssText = "background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;display:none;flex-direction:column;gap:8px;";
+    addForm.id = "stock-add-form";
+
+    var codeInput = document.createElement("input");
+    codeInput.type = "text";
+    codeInput.placeholder = "종목코드 (예: 005930)";
+    codeInput.maxLength = 6;
+    codeInput.style.cssText = "padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;";
+
+    var nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.placeholder = "종목명 (예: 삼성전자)";
+    nameInput.style.cssText = "padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;";
+
+    var hint = document.createElement("div");
+    hint.style.cssText = "font-size:11px;color:var(--text-sub);";
+    hint.textContent = "종목코드는 네이버 증권에서 검색 후 URL의 6자리 숫자를 확인하세요.";
+
+    var formBtns = document.createElement("div");
+    formBtns.style.cssText = "display:flex;gap:8px;";
+
+    var submitBtn = document.createElement("button");
+    submitBtn.className = "btn-primary";
+    submitBtn.textContent = "추가";
+    submitBtn.onclick = function() {
+      var code = codeInput.value.trim();
+      var name = nameInput.value.trim();
+      if (!/^\d{6}$/.test(code) || !name) {
+        alert("종목코드는 숫자 6자리, 종목명을 입력해주세요.");
+        return;
+      }
+      var stockSection = data.sections.filter(function(s) { return s.type === "stocks"; })[0];
+      if (stockSection) {
+        if (!stockSection.items) stockSection.items = [];
+        stockSection.items.push({ code: code, name: name });
+        saveData(data);
+        renderTickerTape();
+        renderSections();
+        addForm.style.display = "none";
+        codeInput.value = "";
+        nameInput.value = "";
+      }
+    };
+
+    var cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn-secondary";
+    cancelBtn.textContent = "취소";
+    cancelBtn.onclick = function() { addForm.style.display = "none"; };
+
+    formBtns.appendChild(submitBtn);
+    formBtns.appendChild(cancelBtn);
+    addForm.appendChild(codeInput);
+    addForm.appendChild(nameInput);
+    addForm.appendChild(hint);
+    addForm.appendChild(formBtns);
+    outer.appendChild(addForm);
+
+    var addBtn = document.createElement("button");
+    addBtn.style.cssText = "width:100%;padding:12px;border:1.5px dashed var(--border);border-radius:12px;background:none;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;";
+    addBtn.textContent = "+ 관심종목 추가";
+    addBtn.onclick = function() {
+      var form = document.getElementById("stock-add-form");
+      form.style.display = form.style.display === "none" ? "flex" : "none";
+    };
+    outer.appendChild(addBtn);
+
     stocks.forEach(function (s) { updateTotal(s.code); });
     updateGrandTotal();
   }
