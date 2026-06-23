@@ -787,10 +787,26 @@
           </div>
           <button id="ai-analyze-btn" style="width:100%;padding:14px;background:#457B9D;color:#fff;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">🤖 Claude AI에서 분석하기 →</button>
           <div style="font-size:11px;color:var(--text-sub);margin-top:6px;text-align:center;">버튼을 누르면 Claude.ai 채팅이 새 창으로 열립니다.</div>
-          <div id="ai-result" style="margin-top:14px;display:none;">
-            <div id="ai-result-content" style="background:#fff;border:1px solid #c5d9e8;border-radius:12px;padding:16px;font-size:14px;line-height:1.7;color:var(--text-main);white-space:pre-wrap;"></div>
-            <div style="font-size:11px;color:var(--text-sub);margin-top:8px;text-align:right;">⚠️ AI 분석은 참고용이며 투자 결정의 최종 책임은 본인에게 있습니다.</div>
+
+          <!-- 분석 결과 붙여넣기 + 음성 읽기 -->
+          <div style="margin-top:14px;border-top:1px solid #c5d9e8;padding-top:14px;">
+            <div style="font-size:14px;font-weight:700;color:#457B9D;margin-bottom:8px;">📋 분석 결과 붙여넣기 → 🔊 음성으로 읽기</div>
+            <textarea id="ai-tts-text" placeholder="Claude AI 분석 결과를 여기에 붙여넣으세요..." style="width:100%;min-height:120px;padding:10px 12px;border:1px solid #c5d9e8;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+              <button id="ai-tts-play" style="flex:1;padding:12px;background:#2A9D8F;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">🔊 읽기 시작</button>
+              <button id="ai-tts-pause" style="padding:12px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;" disabled>⏸ 일시정지</button>
+              <button id="ai-tts-stop" style="padding:12px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;" disabled>⏹ 정지</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:var(--text-sub);">속도</span>
+              <input type="range" id="ai-tts-rate" min="0.5" max="2" step="0.1" value="1" style="flex:1;min-width:80px;">
+              <span id="ai-tts-rate-val" style="font-size:12px;color:var(--text-sub);min-width:28px;">1.0x</span>
+              <span style="font-size:12px;color:var(--text-sub);">목소리</span>
+              <select id="ai-tts-voice" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;"></select>
+            </div>
+            <div id="ai-tts-status" style="font-size:12px;color:var(--text-sub);margin-top:6px;text-align:center;"></div>
           </div>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:8px;text-align:right;">⚠️ AI 분석은 참고용이며 투자 결정의 최종 책임은 본인에게 있습니다.</div>
         </div>
 
         <div style="margin-bottom:16px;">
@@ -2433,6 +2449,99 @@
     var claudeUrl = "https://claude.ai/new?q=" + encodeURIComponent(prompt);
     window.open(claudeUrl, "_blank");
   });
+
+  // ===== TTS (음성 읽기) JS =====
+  var ttsUtterance = null;
+  var ttsPaused = false;
+
+  function ttsLoadVoices() {
+    var sel = document.getElementById("ai-tts-voice");
+    if (!sel) return;
+    var voices = window.speechSynthesis.getVoices();
+    sel.innerHTML = "";
+    // 한국어 목소리 우선
+    var koVoices = voices.filter(function(v) { return v.lang.startsWith("ko"); });
+    var otherVoices = voices.filter(function(v) { return !v.lang.startsWith("ko"); });
+    var allVoices = koVoices.concat(otherVoices);
+    if (allVoices.length === 0) {
+      var opt = document.createElement("option");
+      opt.textContent = "기본 목소리";
+      sel.appendChild(opt);
+      return;
+    }
+    allVoices.forEach(function(v, i) {
+      var opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = v.name + " (" + v.lang + ")";
+      opt.dataset.idx = voices.indexOf(v);
+      sel.appendChild(opt);
+    });
+  }
+
+  window.speechSynthesis.onvoiceschanged = ttsLoadVoices;
+  ttsLoadVoices();
+
+  document.getElementById("ai-tts-rate").oninput = function() {
+    document.getElementById("ai-tts-rate-val").textContent = parseFloat(this.value).toFixed(1) + "x";
+  };
+
+  document.getElementById("ai-tts-play").onclick = function() {
+    var text = document.getElementById("ai-tts-text").value.trim();
+    if (!text) { alert("먼저 분석 결과를 붙여넣으세요."); return; }
+
+    window.speechSynthesis.cancel();
+    ttsPaused = false;
+
+    ttsUtterance = new SpeechSynthesisUtterance(text);
+    ttsUtterance.rate = parseFloat(document.getElementById("ai-tts-rate").value);
+    ttsUtterance.lang = "ko-KR";
+
+    var sel = document.getElementById("ai-tts-voice");
+    var voices = window.speechSynthesis.getVoices();
+    var selectedOpt = sel.options[sel.selectedIndex];
+    if (selectedOpt && selectedOpt.dataset.idx !== undefined) {
+      ttsUtterance.voice = voices[parseInt(selectedOpt.dataset.idx)];
+    }
+
+    ttsUtterance.onstart = function() {
+      document.getElementById("ai-tts-status").textContent = "🔊 읽는 중...";
+      document.getElementById("ai-tts-pause").disabled = false;
+      document.getElementById("ai-tts-stop").disabled = false;
+    };
+    ttsUtterance.onend = function() {
+      document.getElementById("ai-tts-status").textContent = "✅ 읽기 완료";
+      document.getElementById("ai-tts-pause").disabled = true;
+      document.getElementById("ai-tts-stop").disabled = true;
+    };
+    ttsUtterance.onerror = function() {
+      document.getElementById("ai-tts-status").textContent = "❌ 오류 발생";
+    };
+
+    window.speechSynthesis.speak(ttsUtterance);
+  };
+
+  document.getElementById("ai-tts-pause").onclick = function() {
+    if (!ttsPaused) {
+      window.speechSynthesis.pause();
+      ttsPaused = true;
+      this.textContent = "▶ 재개";
+      document.getElementById("ai-tts-status").textContent = "⏸ 일시정지";
+    } else {
+      window.speechSynthesis.resume();
+      ttsPaused = false;
+      this.textContent = "⏸ 일시정지";
+      document.getElementById("ai-tts-status").textContent = "🔊 읽는 중...";
+    }
+  };
+
+  document.getElementById("ai-tts-stop").onclick = function() {
+    window.speechSynthesis.cancel();
+    ttsPaused = false;
+    document.getElementById("ai-tts-pause").textContent = "⏸ 일시정지";
+    document.getElementById("ai-tts-pause").disabled = true;
+    document.getElementById("ai-tts-stop").disabled = true;
+    document.getElementById("ai-tts-status").textContent = "⏹ 정지됨";
+  };
 
   // ===== 패널 순서 변경 JS =====
   var panelOrderRef = db.ref("panelOrder");
