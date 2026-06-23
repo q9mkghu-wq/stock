@@ -929,14 +929,28 @@
   firebase.initializeApp(firebaseConfig);
   var db = firebase.database();
   var dbRef = db.ref("stockHub");
+  var watchlistRef = db.ref("watchlist");
 
   var data = JSON.parse(JSON.stringify(DEFAULT_DATA));
   var isFirstLoad = true;
-  var lastPrices = {}; // code -> 현재가(숫자)
+  var lastPrices = {};
+  var watchlist = []; // 실시간 시세 전용 종목 리스트
 
-  function saveData(d) {
-    dbRef.set(d);
-  }
+  function saveData(d) { dbRef.set(d); }
+  function saveWatchlist() { watchlistRef.set(watchlist); }
+
+  // watchlist Firebase 동기화
+  watchlistRef.on("value", function(snap) {
+    var val = snap.val();
+    if (val && Array.isArray(val)) {
+      watchlist = val;
+    } else if (val) {
+      watchlist = Object.values(val).filter(function(v) { return v && v.code; });
+    } else {
+      watchlist = [];
+    }
+    renderTickerTape();
+  });
 
   // 즉시 1차 렌더링 (Firebase 응답 전에도 화면이 비어있지 않도록)
   renderTickerTape();
@@ -975,10 +989,10 @@
   // ---------- 관심 종목 시세 ----------
   function renderTickerTape() {
     var outer = document.getElementById("tv-ticker-tape");
+    if (!outer) return;
     outer.innerHTML = "";
 
-    var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
-    var stocks = (stockSection && stockSection.items) ? stockSection.items : [];
+    var stocks = watchlist;
 
     if (stocks.length === 0) {
       outer.innerHTML = '<p style="font-size:12px; color:var(--text-sub);">관심 종목을 추가하면 실시간 시세를 불러올 수 있습니다.</p>';
@@ -1184,25 +1198,23 @@
       upBtn.textContent = "↑";
       upBtn.disabled = stockIdx === 0;
       upBtn.onclick = function() {
-        var tmp = stocks[stockIdx];
-        stocks[stockIdx] = stocks[stockIdx - 1];
-        stocks[stockIdx - 1] = tmp;
-        saveData(data);
+        var tmp = watchlist[stockIdx];
+        watchlist[stockIdx] = watchlist[stockIdx - 1];
+        watchlist[stockIdx - 1] = tmp;
+        saveWatchlist();
         renderTickerTape();
-        renderSections();
       };
 
       var downBtn = document.createElement("button");
       downBtn.className = "move-btn";
       downBtn.textContent = "↓";
-      downBtn.disabled = stockIdx === stocks.length - 1;
+      downBtn.disabled = stockIdx === watchlist.length - 1;
       downBtn.onclick = function() {
-        var tmp = stocks[stockIdx];
-        stocks[stockIdx] = stocks[stockIdx + 1];
-        stocks[stockIdx + 1] = tmp;
-        saveData(data);
+        var tmp = watchlist[stockIdx];
+        watchlist[stockIdx] = watchlist[stockIdx + 1];
+        watchlist[stockIdx + 1] = tmp;
+        saveWatchlist();
         renderTickerTape();
-        renderSections();
       };
 
       var delBtn = document.createElement("button");
@@ -1211,10 +1223,9 @@
       delBtn.style.color = "var(--accent)";
       delBtn.onclick = function() {
         if (!confirm(s.name + "을(를) 삭제하시겠습니까?")) return;
-        stocks.splice(stockIdx, 1);
-        saveData(data);
+        watchlist.splice(stockIdx, 1);
+        saveWatchlist();
         renderTickerTape();
-        renderSections();
       };
 
       btnGroup.appendChild(upBtn);
@@ -1262,17 +1273,12 @@
         alert("종목코드는 숫자 6자리, 종목명을 입력해주세요.");
         return;
       }
-      var stockSection = data.sections.filter(function(s) { return s.type === "stocks"; })[0];
-      if (stockSection) {
-        if (!stockSection.items) stockSection.items = [];
-        stockSection.items.push({ code: code, name: name });
-        saveData(data);
-        renderTickerTape();
-        renderSections();
-        addForm.style.display = "none";
-        codeInput.value = "";
-        nameInput.value = "";
-      }
+      watchlist.push({ code: code, name: name });
+      saveWatchlist();
+      renderTickerTape();
+      addForm.style.display = "none";
+      codeInput.value = "";
+      nameInput.value = "";
     };
 
     var cancelBtn = document.createElement("button");
@@ -1302,8 +1308,7 @@
   }
 
   function updateTotal(code) {
-    var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
-    var stock = (stockSection && stockSection.items ? stockSection.items : []).filter(function (s) { return s.code === code; })[0];
+    var stock = watchlist.filter(function (s) { return s.code === code; })[0];
     var totalEl = document.getElementById("total-" + code);
     if (!stock || !totalEl) return;
 
@@ -1324,9 +1329,7 @@
   function updateGrandTotal() {
     var grandTotalValue = document.getElementById("grand-total");
     if (!grandTotalValue) return;
-
-    var stockSection = data.sections.filter(function (s) { return s.type === "stocks"; })[0];
-    var stocks = (stockSection && stockSection.items) ? stockSection.items : [];
+    var stocks = watchlist;
 
     var sum = 0;
     var hasQty = false;
