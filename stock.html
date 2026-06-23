@@ -1049,10 +1049,15 @@
       left.style.flexDirection = "column";
       left.style.gap = "4px";
 
-      var nameEl = document.createElement("div");
+      var nameEl = document.createElement("a");
       nameEl.style.fontSize = "16px";
       nameEl.style.fontWeight = "800";
-      nameEl.textContent = s.name;
+      nameEl.style.color = "var(--text-main)";
+      nameEl.style.textDecoration = "none";
+      nameEl.textContent = s.name + " ↗";
+      nameEl.href = "https://finance.naver.com/item/main.naver?code=" + s.code;
+      nameEl.target = "_blank";
+      nameEl.title = "네이버 증권에서 보기";
 
       // 카테고리 스티커
       var tagRow = document.createElement("div");
@@ -1152,6 +1157,13 @@
         priceEl.textContent = "—";
       }
 
+      // 네이버 증권 바로가기 버튼
+      var naverBtn = document.createElement("a");
+      naverBtn.href = "https://finance.naver.com/item/main.naver?code=" + s.code;
+      naverBtn.target = "_blank";
+      naverBtn.style.cssText = "font-size:11px;color:var(--accent);text-decoration:none;font-weight:700;";
+      naverBtn.textContent = "네이버 증권 →";
+
       var totalEl = document.createElement("div");
       totalEl.style.fontSize = "13px";
       totalEl.style.fontWeight = "700";
@@ -1160,6 +1172,7 @@
       totalEl.id = "total-" + s.code;
 
       right.appendChild(priceEl);
+      right.appendChild(naverBtn);
       right.appendChild(totalEl);
 
       row.appendChild(left);
