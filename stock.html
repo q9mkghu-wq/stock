@@ -760,7 +760,7 @@
           <div class="yt-keyword-chips" id="weather-city-chips"></div>
           <div id="weather-list"><div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px 0;">도시를 추가하고 선택하세요.</div></div>
           <a id="naver-weather-link" href="https://weather.naver.com" target="_blank" style="display:block;margin-top:10px;padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;color:var(--text-main);text-decoration:none;text-align:center;">🌐 네이버 날씨 바로가기 →</a>
-          <a id="kma-weather-link" href="https://www.weather.go.kr/w/index.do" target="_blank" style="display:block;margin-top:6px;padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;color:var(--text-main);text-decoration:none;text-align:center;">🏛️ 기상청 날씨 바로가기 →</a>
+          <a id="kakao-weather-link" href="https://weather.kakao.com" target="_blank" style="display:block;margin-top:6px;padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-size:14px;font-weight:700;color:var(--text-main);text-decoration:none;text-align:center;">🟡 카카오 날씨 바로가기 →</a>
         </div>
 
         <div style="border-top:2px solid var(--border);padding-top:16px;margin-bottom:12px;">
@@ -2610,34 +2610,36 @@
     "세종": "https://weather.naver.com/today/36110000"
   };
 
-  var _wKmaUrl = {
-    "서울": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=11",
-    "부산": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=21",
-    "인천": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=28",
-    "대구": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=22",
-    "대전": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=30",
-    "광주": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=29",
-    "수원": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=4111",
-    "울산": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=31",
-    "제주": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=50",
-    "의정부": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=4115",
-    "성남": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=4113",
-    "고양": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=4128",
-    "창원": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=38",
-    "세종": "https://www.weather.go.kr/w/obs-climate/land/city-obs.do?distrct=36"
+  var _wKakaoUrl = {
+    "서울": "https://weather.kakao.com/forecast/seoul",
+    "부산": "https://weather.kakao.com/forecast/busan",
+    "인천": "https://weather.kakao.com/forecast/incheon",
+    "대구": "https://weather.kakao.com/forecast/daegu",
+    "대전": "https://weather.kakao.com/forecast/daejeon",
+    "광주": "https://weather.kakao.com/forecast/gwangju",
+    "수원": "https://weather.kakao.com/forecast/suwon",
+    "울산": "https://weather.kakao.com/forecast/ulsan",
+    "제주": "https://weather.kakao.com/forecast/jeju",
+    "의정부": "https://weather.kakao.com/forecast/uijeongbu",
+    "성남": "https://weather.kakao.com/forecast/seongnam",
+    "고양": "https://weather.kakao.com/forecast/goyang",
+    "창원": "https://weather.kakao.com/forecast/changwon",
+    "세종": "https://weather.kakao.com/forecast/sejong"
   };
 
   function _wUpdateNaverLink(name) {
-    var link = document.getElementById("naver-weather-link");
-    if (!link) return;
-    var url = _wNaverUrl[name] || "https://weather.naver.com/today?cpname=" + encodeURIComponent(name);
-    link.href = url;
-    link.textContent = "🌐 " + name + " 네이버 날씨 →";
-    var kmaLink = document.getElementById("kma-weather-link");
-    if (!kmaLink) return;
-    var kmaUrl = _wKmaUrl[name] || "https://www.weather.go.kr/w/index.do";
-    kmaLink.href = kmaUrl;
-    kmaLink.textContent = "🏛️ " + name + " 기상청 날씨 →";
+    var naverLink = document.getElementById("naver-weather-link");
+    if (naverLink) {
+      var naverUrl = _wNaverUrl[name] || "https://weather.naver.com/today?cpname=" + encodeURIComponent(name);
+      naverLink.href = naverUrl;
+      naverLink.textContent = "🌐 " + name + " 네이버 날씨 →";
+    }
+    var kakaoLink = document.getElementById("kakao-weather-link");
+    if (kakaoLink) {
+      var kakaoUrl = _wKakaoUrl[name] || "https://weather.kakao.com";
+      kakaoLink.href = kakaoUrl;
+      kakaoLink.textContent = "🟡 " + name + " 카카오 날씨 →";
+    }
   }
 
   function _wSave() {
