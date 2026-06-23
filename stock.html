@@ -940,10 +940,44 @@
   function saveWatchlist() { watchlistRef.set(watchlist); }
 
   // watchlist Firebase 동기화
+  watchlistRef.once("value", function(snap) {
+    var val = snap.val();
+    if (val && Array.isArray(val) && val.length > 0) {
+      watchlist = val.filter(function(v) { return v && v.code; });
+      renderTickerTape();
+    } else if (val && !Array.isArray(val)) {
+      watchlist = Object.values(val).filter(function(v) { return v && v.code; });
+      renderTickerTape();
+    } else {
+      // watchlist 비어있으면 stockHub에서 종목 복사
+      dbRef.once("value", function(snap2) {
+        var d = snap2.val();
+        if (d && d.sections) {
+          var stockSec = d.sections.filter(function(s) { return s.type === "stocks"; })[0];
+          if (stockSec && stockSec.items && stockSec.items.length > 0) {
+            watchlist = stockSec.items.map(function(s) {
+              return { code: s.code, name: s.name, qty: s.qty || 0 };
+            });
+            saveWatchlist();
+            renderTickerTape();
+            return;
+          }
+        }
+        // 둘 다 없으면 기본 종목 3개
+        watchlist = [
+          { code: "005930", name: "삼성전자", qty: 0 },
+          { code: "000660", name: "SK하이닉스", qty: 0 }
+        ];
+        saveWatchlist();
+        renderTickerTape();
+      });
+    }
+  });
+
   watchlistRef.on("value", function(snap) {
     var val = snap.val();
     if (val && Array.isArray(val)) {
-      watchlist = val;
+      watchlist = val.filter(function(v) { return v && v.code; });
     } else if (val) {
       watchlist = Object.values(val).filter(function(v) { return v && v.code; });
     } else {
@@ -1577,7 +1611,7 @@
 
     if (!section.items) section.items = [];
 
-    var titleParts = buildSectionTitle(section.title, idx, "+ 종목 추가", false);
+    var titleParts = buildSectionTitle(section.title, idx, "+ 종목 추가", true);
     wrap.appendChild(titleParts.titleRow);
 
     var list = document.createElement("div");
