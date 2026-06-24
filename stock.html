@@ -837,16 +837,15 @@
       </div>
 
       <!-- 경제 뉴스 -->
-      <div class="slide-panel" id="slide-news">
-        <div class="panel-title-row" id="title-news">
-          <span>📰 경제 뉴스</span>
+      <!-- AI 바로가기 패널 -->
+      <div class="slide-panel" id="slide-ai-links">
+        <div class="panel-title-row">
+          <span>🚀 AI 바로가기</span>
           <div class="panel-title-actions">
-            <button class="move-btn panel-lr-btn" data-id="news" data-dir="-1">←</button>
-            <button class="move-btn panel-lr-btn" data-id="news" data-dir="1">→</button>
+            <button class="move-btn panel-lr-btn" data-id="ai-links" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="ai-links" data-dir="1">→</button>
           </div>
         </div>
-
-        <!-- AI 바로가기 -->
         <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
           <a href="https://claude.ai" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:12px;padding:18px;background:linear-gradient(135deg,#C9572E,#e07050);color:#fff;border-radius:14px;text-decoration:none;font-size:20px;font-weight:800;">
             🤖 Claude AI
@@ -857,6 +856,17 @@
           <a href="https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query=AI+%EC%A3%BC%EC%8B%9D+%EB%B6%84%EC%84%9D" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:12px;padding:18px;background:linear-gradient(135deg,#03C75A,#028a40);color:#fff;border-radius:14px;text-decoration:none;font-size:20px;font-weight:800;">
             🟢 네이버 AI
           </a>
+        </div>
+      </div>
+
+      <!-- 경제 뉴스 -->
+      <div class="slide-panel" id="slide-news">
+        <div class="panel-title-row" id="title-news">
+          <span>📰 경제 뉴스</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="news" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="news" data-dir="1">→</button>
+          </div>
         </div>
         <div class="news-source-tabs" id="news-source-tabs">
           <button class="news-source-btn active" data-source="all">전체</button>
@@ -2616,7 +2626,7 @@
   // Firebase에서 저장된 순서 불러오기
   panelOrderRef.once("value", function (snap) {
     var val = snap.val();
-    if (val && Array.isArray(val) && val.length === 5) {
+    if (val && Array.isArray(val) && val.length === 6) {
       applyPanelOrder(val);
     } else {
       updatePanelBtns();
