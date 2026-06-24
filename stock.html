@@ -14,13 +14,18 @@
     --accent: #C9572E;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
+  html {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     background: var(--bg);
     color: var(--text-main);
-    overflow: hidden;
+    overflow: auto;
     width: 100%;
     height: 100%;
+  }
+  body {
+    overflow: auto;
+    width: 100%;
+    min-height: 100%;
   }
   ::-webkit-scrollbar {
     width: 8px;
@@ -107,18 +112,10 @@
     margin-bottom: 4px;
   }
   .page-wrap {
-    display: flex;
+    display: inline-flex;
     flex-direction: column;
-    width: max-content;
     min-width: 100vw;
-    overflow-x: auto;
-    overflow-y: auto;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    width: max-content;
   }
 
   /* 왼쪽: 주식 허브 */
