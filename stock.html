@@ -18,9 +18,9 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     background: var(--bg);
     color: var(--text-main);
-    overflow-x: scroll;
-    overflow-y: auto;
-    min-width: 320px;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
   }
   ::-webkit-scrollbar {
     width: 8px;
@@ -111,13 +111,16 @@
     flex-direction: column;
     width: max-content;
     min-width: 100vw;
+    overflow-x: auto;
+    overflow-y: auto;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
-  html {
-    overflow-x: scroll !important;
-  }
-  body {
-    overflow-x: visible !important;
-  }
+
   /* 왼쪽: 주식 허브 */
   .hub-panel {
     flex: 0 0 480px;
@@ -3470,15 +3473,8 @@
   var scrollTimer = null;
 
   function doScroll(dir) {
-    var targets = [
-      document.scrollingElement,
-      document.documentElement,
-      document.body,
-      document.getElementById("page-wrap") || null
-    ];
-    targets.forEach(function(el) {
-      if (el) el.scrollLeft += dir * 300;
-    });
+    var el = document.getElementById("page-wrap");
+    if (el) el.scrollLeft += dir * 350;
   }
 
   function startScroll(dir) {
