@@ -664,7 +664,7 @@
 </head>
 <body>
 
-<div class="page-wrap">
+<div class="page-wrap" id="page-wrap">
 
 <!-- ===== 차트 기간 선택 ===== -->
 <div class="chart-period-bar">
@@ -3469,19 +3469,29 @@
   // ===== 좌우 스크롤 버튼 =====
   var scrollTimer = null;
 
+  function doScroll(dir) {
+    var targets = [
+      document.scrollingElement,
+      document.documentElement,
+      document.body,
+      document.getElementById("page-wrap") || null
+    ];
+    targets.forEach(function(el) {
+      if (el) el.scrollLeft += dir * 300;
+    });
+  }
+
   function startScroll(dir) {
-    window.scrollBy({ left: dir * 400, behavior: "smooth" });
-    scrollTimer = setInterval(function() {
-      window.scrollBy({ left: dir * 400, behavior: "smooth" });
-    }, 400);
+    doScroll(dir);
+    scrollTimer = setInterval(function() { doScroll(dir); }, 200);
   }
 
   function stopScroll() { clearInterval(scrollTimer); }
 
-  document.getElementById("scroll-left-btn").addEventListener("mousedown", function() { startScroll(-1); });
-  document.getElementById("scroll-left-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(-1); });
-  document.getElementById("scroll-right-btn").addEventListener("mousedown", function() { startScroll(1); });
-  document.getElementById("scroll-right-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(1); });
+  document.getElementById("scroll-left-btn").addEventListener("mousedown", function(e) { e.preventDefault(); startScroll(-1); });
+  document.getElementById("scroll-left-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(-1); }, {passive:false});
+  document.getElementById("scroll-right-btn").addEventListener("mousedown", function(e) { e.preventDefault(); startScroll(1); });
+  document.getElementById("scroll-right-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(1); }, {passive:false});
   document.addEventListener("mouseup", stopScroll);
   document.addEventListener("touchend", stopScroll);
 </script>
