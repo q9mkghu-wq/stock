@@ -3631,7 +3631,39 @@
     document.getElementById("memo-input").value = "";
   };
 
-  // ===== 좌우 스크롤 버튼 =====
+  // ===== 터치 스와이프 좌우 스크롤 =====
+  var touchStartX = 0;
+  var touchStartY = 0;
+  var touchStartScrollLeft = 0;
+  var isSwiping = false;
+
+  var pageWrap = document.getElementById("page-wrap");
+
+  pageWrap.addEventListener("touchstart", function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartScrollLeft = pageWrap.scrollLeft;
+    isSwiping = false;
+  }, { passive: true });
+
+  pageWrap.addEventListener("touchmove", function(e) {
+    var dx = e.touches[0].clientX - touchStartX;
+    var dy = e.touches[0].clientY - touchStartY;
+    if (!isSwiping) {
+      // 가로 스와이프인지 세로 스크롤인지 판별
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+        isSwiping = true;
+      }
+    }
+    if (isSwiping) {
+      e.preventDefault();
+      pageWrap.scrollLeft = touchStartScrollLeft - dx;
+    }
+  }, { passive: false });
+
+  pageWrap.addEventListener("touchend", function() {
+    isSwiping = false;
+  }, { passive: true });
   var scrollTimer = null;
 
   function doScroll(dir) {
