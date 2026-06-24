@@ -112,6 +112,12 @@
     width: max-content;
     min-width: 100vw;
   }
+  html {
+    overflow-x: scroll !important;
+  }
+  body {
+    overflow-x: visible !important;
+  }
   /* 왼쪽: 주식 허브 */
   .hub-panel {
     flex: 0 0 480px;
@@ -370,6 +376,33 @@
     resize: vertical;
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
+
+  /* 고정 좌우 스크롤 버튼 */
+  .scroll-nav {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 9999;
+  }
+  .scroll-nav-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scroll-nav-btn:hover { background: #a8431f; }
+  .scroll-nav-btn:active { transform: scale(0.93); }
 
   /* AI 분석 */
   .ai-topic-btn {
@@ -995,6 +1028,12 @@
 
 </div><!-- /app-layout -->
 </div><!-- /page-wrap -->
+
+<!-- 고정 좌우 스크롤 버튼 -->
+<div class="scroll-nav">
+  <button class="scroll-nav-btn" id="scroll-left-btn">←</button>
+  <button class="scroll-nav-btn" id="scroll-right-btn">→</button>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -3426,6 +3465,25 @@
     memoSave(null, text, { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" });
     document.getElementById("memo-input").value = "";
   };
+
+  // ===== 좌우 스크롤 버튼 =====
+  var scrollTimer = null;
+
+  function startScroll(dir) {
+    window.scrollBy({ left: dir * 400, behavior: "smooth" });
+    scrollTimer = setInterval(function() {
+      window.scrollBy({ left: dir * 400, behavior: "smooth" });
+    }, 400);
+  }
+
+  function stopScroll() { clearInterval(scrollTimer); }
+
+  document.getElementById("scroll-left-btn").addEventListener("mousedown", function() { startScroll(-1); });
+  document.getElementById("scroll-left-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(-1); });
+  document.getElementById("scroll-right-btn").addEventListener("mousedown", function() { startScroll(1); });
+  document.getElementById("scroll-right-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(1); });
+  document.addEventListener("mouseup", stopScroll);
+  document.addEventListener("touchend", stopScroll);
 </script>
 
 </body>
