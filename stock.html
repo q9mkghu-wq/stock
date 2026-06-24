@@ -23,9 +23,8 @@
     height: 100%;
   }
   body {
-    overflow: auto;
-    width: 100%;
-    min-height: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
   }
   ::-webkit-scrollbar {
     width: 8px;
@@ -112,10 +111,10 @@
     margin-bottom: 4px;
   }
   .page-wrap {
-    display: inline-flex;
+    display: flex;
     flex-direction: column;
-    min-width: 100vw;
     width: max-content;
+    min-width: 100%;
   }
 
   /* 왼쪽: 주식 허브 */
@@ -3628,44 +3627,22 @@
     document.getElementById("memo-input").value = "";
   };
 
-  // ===== 터치 스와이프 좌우 스크롤 =====
+  // ===== 좌우 스크롤 (버튼 + 터치 스와이프) =====
   var touchStartX = 0;
   var touchStartY = 0;
   var touchStartScrollLeft = 0;
   var isSwiping = false;
-
-  var pageWrap = document.getElementById("page-wrap");
-
-  pageWrap.addEventListener("touchstart", function(e) {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    touchStartScrollLeft = pageWrap.scrollLeft;
-    isSwiping = false;
-  }, { passive: true });
-
-  pageWrap.addEventListener("touchmove", function(e) {
-    var dx = e.touches[0].clientX - touchStartX;
-    var dy = e.touches[0].clientY - touchStartY;
-    if (!isSwiping) {
-      // 가로 스와이프인지 세로 스크롤인지 판별
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
-        isSwiping = true;
-      }
-    }
-    if (isSwiping) {
-      e.preventDefault();
-      pageWrap.scrollLeft = touchStartScrollLeft - dx;
-    }
-  }, { passive: false });
-
-  pageWrap.addEventListener("touchend", function() {
-    isSwiping = false;
-  }, { passive: true });
   var scrollTimer = null;
 
+  function getScroller() {
+    // body가 max-content child를 가지면 body가 스크롤됨
+    if (document.body.scrollWidth > document.body.clientWidth) return document.body;
+    if (document.documentElement.scrollWidth > document.documentElement.clientWidth) return document.documentElement;
+    return document.scrollingElement || document.body;
+  }
+
   function doScroll(dir) {
-    var el = document.getElementById("page-wrap");
-    if (el) el.scrollLeft += dir * 350;
+    getScroller().scrollLeft += dir * 350;
   }
 
   function startScroll(dir) {
@@ -3675,12 +3652,37 @@
 
   function stopScroll() { clearInterval(scrollTimer); }
 
+  // 버튼 이벤트
   document.getElementById("scroll-left-btn").addEventListener("mousedown", function(e) { e.preventDefault(); startScroll(-1); });
   document.getElementById("scroll-left-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(-1); }, {passive:false});
   document.getElementById("scroll-right-btn").addEventListener("mousedown", function(e) { e.preventDefault(); startScroll(1); });
   document.getElementById("scroll-right-btn").addEventListener("touchstart", function(e) { e.preventDefault(); startScroll(1); }, {passive:false});
   document.addEventListener("mouseup", stopScroll);
-  document.addEventListener("touchend", stopScroll);
+
+  // 터치 스와이프
+  document.addEventListener("touchstart", function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchStartScrollLeft = getScroller().scrollLeft;
+    isSwiping = false;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", function(e) {
+    var dx = e.touches[0].clientX - touchStartX;
+    var dy = e.touches[0].clientY - touchStartY;
+    if (!isSwiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) {
+      isSwiping = true;
+    }
+    if (isSwiping) {
+      e.preventDefault();
+      getScroller().scrollLeft = touchStartScrollLeft - dx;
+    }
+  }, { passive: false });
+
+  document.addEventListener("touchend", function() {
+    isSwiping = false;
+    stopScroll();
+  }, { passive: true });
 </script>
 
 </body>
