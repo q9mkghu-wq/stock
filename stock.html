@@ -2830,23 +2830,40 @@
 
     sectorData.forEach(function(sector) {
       var section = document.createElement("div");
-      section.style.cssText = "margin-bottom:18px;";
+      section.style.cssText = "margin-bottom:24px;";
 
       var title = document.createElement("div");
-      title.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--border);";
+      title.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";margin-bottom:10px;padding-bottom:4px;border-bottom:2px solid var(--border);";
       title.textContent = sector.name;
       section.appendChild(title);
 
       var grid = document.createElement("div");
-      grid.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+      grid.style.cssText = "display:flex;flex-direction:column;gap:8px;";
 
       sector.stocks.forEach(function(stock) {
-        var btn = document.createElement("a");
-        btn.href = "https://finance.naver.com/item/main.naver?code=" + stock.code;
-        btn.target = "_blank";
-        btn.style.cssText = "padding:8px 12px;background:" + sector.color + ";color:#fff;border-radius:20px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap;";
-        btn.textContent = stock.name;
-        grid.appendChild(btn);
+        // 카드 (버튼 + 차트)
+        var card = document.createElement("a");
+        card.href = "https://finance.naver.com/item/main.naver?code=" + stock.code;
+        card.target = "_blank";
+        card.style.cssText = "display:flex;align-items:center;gap:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:8px 10px;text-decoration:none;overflow:hidden;";
+
+        // 왼쪽: 종목명
+        var nameEl = document.createElement("div");
+        nameEl.style.cssText = "font-size:13px;font-weight:800;color:" + sector.color + ";min-width:90px;flex-shrink:0;";
+        nameEl.textContent = stock.name;
+
+        // 오른쪽: 미니 차트 이미지 (네이버 증권)
+        var chartImg = document.createElement("img");
+        chartImg.src = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/" + stock.code + ".png";
+        chartImg.style.cssText = "height:40px;flex:1;min-width:0;object-fit:fill;border-radius:4px;";
+        chartImg.alt = stock.name + " 차트";
+        chartImg.onerror = function() {
+          this.style.display = "none";
+        };
+
+        card.appendChild(nameEl);
+        card.appendChild(chartImg);
+        grid.appendChild(card);
       });
 
       section.appendChild(grid);
