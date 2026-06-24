@@ -1025,6 +1025,20 @@
         </div>
       </div>
 
+      <!-- 관련주 패널 -->
+      <div class="slide-panel" id="slide-sectors">
+        <div class="panel-title-row">
+          <span>📌 테마별 관련주</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="sectors" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="sectors" data-dir="1">→</button>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">종목 클릭 시 네이버 증권으로 이동합니다.</p>
+
+        <div id="sector-list"></div>
+      </div>
+
     </div><!-- /panels-container -->
 
 </div><!-- /right-area -->
@@ -2698,6 +2712,154 @@
     document.getElementById("ai-tts-status").textContent = "⏹ 정지됨";
   };
 
+  // ===== 테마별 관련주 JS =====
+  var sectorData = [
+    {
+      name: "🛡️ 방산주", color: "#C9572E",
+      stocks: [
+        { name: "한화에어로스페이스", code: "012450" },
+        { name: "현대로템", code: "064350" },
+        { name: "한국항공우주", code: "047810" },
+        { name: "LIG넥스원", code: "079550" },
+        { name: "한화시스템", code: "272210" },
+        { name: "풍산", code: "103140" },
+        { name: "한화오션", code: "042660" }
+      ]
+    },
+    {
+      name: "🚢 조선주", color: "#457B9D",
+      stocks: [
+        { name: "HD현대중공업", code: "329180" },
+        { name: "한화오션", code: "042660" },
+        { name: "삼성중공업", code: "010140" },
+        { name: "HD한국조선해양", code: "009540" },
+        { name: "HJ중공업", code: "097230" },
+        { name: "STX엔진", code: "077970" }
+      ]
+    },
+    {
+      name: "🤖 로봇주", color: "#6D6875",
+      stocks: [
+        { name: "레인보우로보틱스", code: "277810" },
+        { name: "두산로보틱스", code: "454910" },
+        { name: "로보티즈", code: "108490" },
+        { name: "에스피지", code: "058610" },
+        { name: "유진로봇", code: "056080" },
+        { name: "뉴로메카", code: "348340" },
+        { name: "클로봇", code: "466100" }
+      ]
+    },
+    {
+      name: "💊 바이오주", color: "#2A9D8F",
+      stocks: [
+        { name: "삼성바이오로직스", code: "207940" },
+        { name: "셀트리온", code: "068270" },
+        { name: "유한양행", code: "000100" },
+        { name: "한미약품", code: "128940" },
+        { name: "에이비엘바이오", code: "298380" },
+        { name: "알테오젠", code: "196170" },
+        { name: "리가켐바이오", code: "141080" }
+      ]
+    },
+    {
+      name: "⚙️ 소부장(반도체)", color: "#E9C46A",
+      stocks: [
+        { name: "한미반도체", code: "042700" },
+        { name: "피에스케이", code: "319660" },
+        { name: "이오테크닉스", code: "039030" },
+        { name: "원익IPS", code: "240810" },
+        { name: "리노공업", code: "058470" },
+        { name: "두산테스나", code: "131290" },
+        { name: "하나머티리얼즈", code: "166090" }
+      ]
+    },
+    {
+      name: "💻 반도체", color: "#264653",
+      stocks: [
+        { name: "삼성전자", code: "005930" },
+        { name: "SK하이닉스", code: "000660" },
+        { name: "DB하이텍", code: "000990" },
+        { name: "어보브반도체", code: "102120" },
+        { name: "HPSP", code: "403870" },
+        { name: "ISC", code: "095340" }
+      ]
+    },
+    {
+      name: "⚡ 전력·에너지", color: "#F4A261",
+      stocks: [
+        { name: "LS ELECTRIC", code: "010120" },
+        { name: "HD현대일렉트릭", code: "267260" },
+        { name: "효성중공업", code: "298040" },
+        { name: "제일전기공업", code: "200470" },
+        { name: "일진전기", code: "103590" }
+      ]
+    },
+    {
+      name: "☢️ 원전주", color: "#457B9D",
+      stocks: [
+        { name: "두산에너빌리티", code: "034020" },
+        { name: "한전기술", code: "052690" },
+        { name: "비에이치아이", code: "083650" },
+        { name: "우진", code: "105840" },
+        { name: "한전KPS", code: "051600" }
+      ]
+    },
+    {
+      name: "🚗 2차전지", color: "#E63946",
+      stocks: [
+        { name: "LG에너지솔루션", code: "373220" },
+        { name: "삼성SDI", code: "006400" },
+        { name: "SK이노베이션", code: "096770" },
+        { name: "에코프로", code: "086520" },
+        { name: "에코프로비엠", code: "247540" },
+        { name: "포스코퓨처엠", code: "003670" }
+      ]
+    },
+    {
+      name: "🤖 AI·빅테크", color: "#1D3557",
+      stocks: [
+        { name: "NAVER", code: "035420" },
+        { name: "카카오", code: "035720" },
+        { name: "LG CNS", code: "064400" },
+        { name: "삼성SDS", code: "018260" },
+        { name: "SK텔레콤", code: "017670" }
+      ]
+    }
+  ];
+
+  function renderSectors() {
+    var container = document.getElementById("sector-list");
+    if (!container) return;
+    container.innerHTML = "";
+
+    sectorData.forEach(function(sector) {
+      var section = document.createElement("div");
+      section.style.cssText = "margin-bottom:18px;";
+
+      var title = document.createElement("div");
+      title.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--border);";
+      title.textContent = sector.name;
+      section.appendChild(title);
+
+      var grid = document.createElement("div");
+      grid.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+
+      sector.stocks.forEach(function(stock) {
+        var btn = document.createElement("a");
+        btn.href = "https://finance.naver.com/item/main.naver?code=" + stock.code;
+        btn.target = "_blank";
+        btn.style.cssText = "padding:8px 12px;background:" + sector.color + ";color:#fff;border-radius:20px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap;";
+        btn.textContent = stock.name;
+        grid.appendChild(btn);
+      });
+
+      section.appendChild(grid);
+      container.appendChild(section);
+    });
+  }
+
+  renderSectors();
+
   // ===== 패널 순서 변경 JS =====
   var panelOrderRef = db.ref("panelOrder");
 
@@ -2752,7 +2914,7 @@
   // Firebase에서 저장된 순서 불러오기
   panelOrderRef.once("value", function (snap) {
     var val = snap.val();
-    if (val && Array.isArray(val) && val.length === 6) {
+    if (val && Array.isArray(val) && val.length === 7) {
       applyPanelOrder(val);
     } else {
       updatePanelBtns();
