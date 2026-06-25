@@ -3774,10 +3774,9 @@
       obj.color = style.color || "#2C2A26";
       obj.bgColor = style.bgColor || "#FFFFFF";
     }
+    // imgList가 있으면 저장, 없으면 건드리지 않음 (기존 imgData 보존)
     if (imgList && imgList.length > 0) obj.imgList = imgList;
-    else obj.imgList = null;
     if (ytLinks && ytLinks.length > 0) obj.ytLinks = ytLinks;
-    else obj.ytLinks = null;
     if (id) {
       memoRef.child(id).update(obj);
     } else {
@@ -3949,7 +3948,12 @@
       imgEditSection.appendChild(imgEditTitle);
 
       // 현재 이미지 미리보기
-      var editImgList = memo.imgList ? memo.imgList.slice() : (memo.imgData ? [memo.imgData] : []);
+      var editImgList = [];
+      if (memo.imgList && memo.imgList.length > 0) {
+        editImgList = memo.imgList.slice();
+      } else if (memo.imgData) {
+        editImgList = [memo.imgData];
+      }
 
       function renderEditImgPreview() {
         imgPreviewRow.innerHTML = "";
@@ -4240,8 +4244,13 @@
       item.appendChild(editToolbar);
       item.appendChild(editArea);
 
-      // 이미지 여러 장 표시
-      var imgListData = memo.imgList || (memo.imgData ? [memo.imgData] : []);
+      // 이미지 여러 장 표시 (기존 imgData 호환)
+      var imgListData = [];
+      if (memo.imgList && memo.imgList.length > 0) {
+        imgListData = memo.imgList;
+      } else if (memo.imgData) {
+        imgListData = [memo.imgData];
+      }
       if (imgListData.length > 0) {
         var imgWrap = document.createElement("div");
         imgWrap.className = "memo-img-wrap";
@@ -4249,7 +4258,6 @@
         imgListData.forEach(function(dataUrl) {
           var img = document.createElement("img");
           img.src = dataUrl;
-          img.className = "memo-edit-img";
           img.style.cssText = "max-width:100%;border-radius:8px;display:block;";
           img.alt = "메모 이미지";
           imgWrap.appendChild(img);
