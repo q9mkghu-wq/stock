@@ -3955,6 +3955,9 @@
         editImgList = [memo.imgData];
       }
 
+      var imgPreviewRow = document.createElement("div");
+      imgPreviewRow.style.cssText = "margin-bottom:6px;";
+
       function renderEditImgPreview() {
         imgPreviewRow.innerHTML = "";
         if (editImgList.length === 0) {
