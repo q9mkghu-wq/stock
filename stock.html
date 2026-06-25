@@ -392,6 +392,21 @@
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 
+  /* 글로벌 이코노미 나침반 */
+  .eco-widget { background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center; }
+  .eco-widget-icon { font-size:20px;margin-bottom:2px; }
+  .eco-widget-label { font-size:10px;color:var(--text-sub);margin-bottom:4px; }
+  .eco-widget-value { font-size:16px;font-weight:800;color:var(--text-main); }
+  .eco-widget-change { font-size:12px;font-weight:700;margin-top:2px; }
+  .eco-country-card { display:flex;align-items:center;gap:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:10px 12px; }
+  .eco-link-btn { display:block;padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:var(--text-main);text-decoration:none; }
+  .eco-link-btn:hover { border-color:var(--accent);color:var(--accent); }
+  .eco-calendar-item { background:var(--card-bg);border-left:4px solid var(--border);border-radius:0 8px 8px 0;padding:8px 12px;font-size:13px; }
+  .eco-calendar-item.high { border-left-color:#E63946; }
+  .eco-calendar-item.medium { border-left-color:#F4A261; }
+  .eco-up { color:#E63946; }
+  .eco-down { color:#457B9D; }
+
   /* 고정 좌우 스크롤 버튼 */
   .scroll-nav {
     position: fixed;
@@ -1106,6 +1121,89 @@
         <p style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">종목 클릭 시 네이버 증권으로 이동합니다.</p>
 
         <div id="sector-list"></div>
+      </div>
+
+      <!-- 글로벌 이코노미 나침반 패널 -->
+      <div class="slide-panel" id="slide-economy">
+        <div class="panel-title-row">
+          <span>🗺️ 글로벌 이코노미 나침반</span>
+          <div class="panel-title-actions">
+            <button class="move-btn panel-lr-btn" data-id="economy" data-dir="-1">←</button>
+            <button class="move-btn panel-lr-btn" data-id="economy" data-dir="1">→</button>
+          </div>
+        </div>
+
+        <!-- 오늘의 경제 날씨 -->
+        <div style="font-size:17px;font-weight:800;color:var(--accent);margin-bottom:12px;">☀️ 오늘의 경제 날씨</div>
+
+        <!-- Top 3 핵심 지표 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;">
+          <div id="eco-dxy" class="eco-widget">
+            <div class="eco-widget-icon">💵</div>
+            <div class="eco-widget-label">달러 인덱스</div>
+            <div class="eco-widget-value" id="eco-dxy-val">-</div>
+            <div class="eco-widget-change" id="eco-dxy-chg">-</div>
+          </div>
+          <div id="eco-wti" class="eco-widget">
+            <div class="eco-widget-icon">🛢️</div>
+            <div class="eco-widget-label">WTI 유가</div>
+            <div class="eco-widget-value" id="eco-wti-val">-</div>
+            <div class="eco-widget-change" id="eco-wti-chg">-</div>
+          </div>
+          <div id="eco-us10y" class="eco-widget">
+            <div class="eco-widget-icon">📈</div>
+            <div class="eco-widget-label">미 10년물</div>
+            <div class="eco-widget-value" id="eco-us10y-val">-</div>
+            <div class="eco-widget-change" id="eco-us10y-chg">-</div>
+          </div>
+        </div>
+
+        <!-- 3대국 스냅샷 -->
+        <div style="font-size:15px;font-weight:800;color:var(--text-main);margin-bottom:10px;">🌐 주요국 경기 스냅샷</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+          <div class="eco-country-card">
+            <span style="font-size:18px;">🇺🇸</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:800;">미국 연준</div>
+              <div id="eco-fed-rate" style="font-size:13px;color:var(--text-sub);">금리 로딩중...</div>
+            </div>
+            <div id="eco-fomc-timer" style="font-size:12px;font-weight:700;color:var(--accent);text-align:right;"></div>
+          </div>
+          <div class="eco-country-card">
+            <span style="font-size:18px;">🇰🇷</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:800;">한국 기준금리</div>
+              <div id="eco-kor-rate" style="font-size:13px;color:var(--text-sub);">로딩중...</div>
+            </div>
+          </div>
+          <div class="eco-country-card">
+            <span style="font-size:18px;">🇨🇳</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:800;">중국 PMI</div>
+              <div id="eco-cn-pmi" style="font-size:13px;color:var(--text-sub);">로딩중...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 경제 캘린더 -->
+        <div style="font-size:15px;font-weight:800;color:var(--text-main);margin-bottom:10px;">📅 이번 주 빅 이벤트</div>
+        <div id="eco-calendar" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);">로딩중...</div>
+        </div>
+
+        <!-- 바로가기 링크 -->
+        <div style="font-size:15px;font-weight:800;color:var(--text-main);margin-bottom:10px;">📰 글로벌 경제 뉴스</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+          <a href="https://www.reuters.com/business/finance/" target="_blank" class="eco-link-btn">Reuters 금융뉴스 →</a>
+          <a href="https://www.bloomberg.com/markets" target="_blank" class="eco-link-btn">Bloomberg Markets →</a>
+          <a href="https://fred.stlouisfed.org" target="_blank" class="eco-link-btn">FRED 경제 데이터 →</a>
+          <a href="https://investing.com/economic-calendar/" target="_blank" class="eco-link-btn">경제 캘린더 (Investing.com) →</a>
+          <a href="https://www.imf.org/en/Publications/WEO" target="_blank" class="eco-link-btn">IMF 세계경제전망 →</a>
+        </div>
+
+        <!-- AI 분석 요청 버튼 -->
+        <button id="eco-ai-btn" style="width:100%;padding:14px;background:#457B9D;color:#fff;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;margin-bottom:6px;">🤖 오늘의 세계경제 AI 분석 →</button>
+        <div style="font-size:11px;color:var(--text-sub);text-align:center;">Claude.ai 새창으로 연결됩니다.</div>
       </div>
 
     </div><!-- /panels-container -->
@@ -2946,6 +3044,139 @@
 
   renderSectors();
 
+  // ===== 글로벌 이코노미 나침반 JS =====
+  function ecoSetWidget(valId, chgId, value, change) {
+    var valEl = document.getElementById(valId);
+    var chgEl = document.getElementById(chgId);
+    if (valEl) valEl.textContent = value;
+    if (chgEl) {
+      var isUp = parseFloat(change) >= 0;
+      chgEl.textContent = (isUp ? "▲" : "▼") + Math.abs(parseFloat(change)).toFixed(2) + "%";
+      chgEl.className = "eco-widget-change " + (isUp ? "eco-up" : "eco-down");
+    }
+  }
+
+  // Yahoo Finance → allorigins 프록시로 데이터 로드
+  function ecoFetch(symbol, valId, chgId, formatter) {
+    var url = "https://api.allorigins.win/get?url=" + encodeURIComponent(
+      "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?interval=1d&range=2d"
+    );
+    fetch(url)
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        var data = JSON.parse(res.contents);
+        var meta = data.chart.result[0].meta;
+        var price = meta.regularMarketPrice;
+        var prev = meta.chartPreviousClose || meta.previousClose;
+        var chg = prev ? ((price - prev) / prev * 100) : 0;
+        var valEl = document.getElementById(valId);
+        if (valEl) valEl.textContent = formatter ? formatter(price) : price.toFixed(2);
+        var chgEl = document.getElementById(chgId);
+        if (chgEl) {
+          var isUp = chg >= 0;
+          chgEl.textContent = (isUp ? "▲" : "▼") + Math.abs(chg).toFixed(2) + "%";
+          chgEl.className = "eco-widget-change " + (isUp ? "eco-up" : "eco-down");
+        }
+        // 위젯 테두리 색상
+        var widget = document.getElementById(valId.replace("-val","")).replace ? null : document.getElementById(valId.split("-val")[0]);
+      })
+      .catch(function(){
+        var valEl = document.getElementById(valId);
+        if (valEl) valEl.textContent = "오류";
+      });
+  }
+
+  // 핵심 지표 로드
+  ecoFetch("DX-Y.NYB", "eco-dxy-val", "eco-dxy-chg");        // 달러 인덱스
+  ecoFetch("CL=F", "eco-wti-val", "eco-wti-chg", function(v){ return "$" + v.toFixed(1); }); // WTI
+  ecoFetch("^TNX", "eco-us10y-val", "eco-us10y-chg", function(v){ return v.toFixed(2) + "%"; }); // 미 10년물
+
+  // 연준 금리 (FRED API - 무료)
+  fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(
+    "https://fred.stlouisfed.org/graph/fredgraph.json?id=FEDFUNDS&vintage_date=" + new Date().toISOString().slice(0,10)
+  ))
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    var data = JSON.parse(res.contents);
+    var obs = data.observations;
+    if (obs && obs.length > 0) {
+      var latest = obs[obs.length-1];
+      var el = document.getElementById("eco-fed-rate");
+      if (el) el.textContent = "기준금리: " + latest.value + "% (연준)";
+    }
+  })
+  .catch(function(){
+    var el = document.getElementById("eco-fed-rate");
+    if (el) el.textContent = "데이터 로딩 실패";
+  });
+
+  // 한국 기준금리 (고정 표시 - BOK API 키 필요)
+  var korRateEl = document.getElementById("eco-kor-rate");
+  if (korRateEl) korRateEl.innerHTML = '기준금리: <b>2.75%</b> <span style="font-size:11px;color:var(--text-sub);">(2025.02 기준)</span>';
+
+  // 중국 PMI (고정 표시)
+  var cnPmiEl = document.getElementById("eco-cn-pmi");
+  if (cnPmiEl) cnPmiEl.innerHTML = '제조업 PMI: <b>49.5</b> <span style="font-size:11px;color:#E63946;">▼ 축소 국면</span>';
+
+  // FOMC D-Day 타이머
+  var fomcDates2026 = [
+    new Date("2026-01-28"),new Date("2026-03-18"),new Date("2026-05-06"),
+    new Date("2026-06-17"),new Date("2026-07-29"),new Date("2026-09-16"),
+    new Date("2026-11-04"),new Date("2026-12-16")
+  ];
+  var today = new Date();
+  var nextFomc = fomcDates2026.find(function(d){ return d >= today; });
+  var timerEl = document.getElementById("eco-fomc-timer");
+  if (timerEl && nextFomc) {
+    var diff = Math.ceil((nextFomc - today) / (1000*60*60*24));
+    timerEl.innerHTML = "FOMC<br>D-" + diff;
+  }
+
+  // 경제 캘린더 (주요 일정 수동 등록)
+  var ecoCalendar = [
+    { date: "07.02", name: "미국 ADP 고용변화", importance: "high", country: "🇺🇸" },
+    { date: "07.03", name: "미국 비농업 고용지수(NFP)", importance: "high", country: "🇺🇸" },
+    { date: "07.03", name: "미국 실업률", importance: "high", country: "🇺🇸" },
+    { date: "07.10", name: "미국 CPI(소비자물가)", importance: "high", country: "🇺🇸" },
+    { date: "07.11", name: "미국 PPI(생산자물가)", importance: "medium", country: "🇺🇸" },
+    { date: "07.15", name: "중국 GDP (2분기)", importance: "high", country: "🇨🇳" },
+    { date: "07.29", name: "FOMC 금리 결정", importance: "high", country: "🇺🇸" },
+    { date: "07.30", name: "미국 GDP (2분기 예비)", importance: "high", country: "🇺🇸" },
+  ];
+
+  var calEl = document.getElementById("eco-calendar");
+  if (calEl) {
+    calEl.innerHTML = "";
+    ecoCalendar.forEach(function(item) {
+      var div = document.createElement("div");
+      div.className = "eco-calendar-item " + item.importance;
+      div.innerHTML =
+        "<div style='display:flex;justify-content:space-between;align-items:center;'>" +
+        "<span style='font-weight:700;'>" + item.country + " " + item.name + "</span>" +
+        "<span style='font-size:11px;color:var(--text-sub);'>" + item.date + "</span>" +
+        "</div>" +
+        "<div style='font-size:11px;margin-top:2px;color:" + (item.importance==="high"?"#E63946":"#F4A261") + ";'>" +
+        (item.importance==="high" ? "⭐⭐⭐ 중요도 높음" : "⭐⭐ 중요도 보통") + "</div>";
+      calEl.appendChild(div);
+    });
+  }
+
+  // AI 분석 버튼
+  var ecoAiBtn = document.getElementById("eco-ai-btn");
+  if (ecoAiBtn) {
+    ecoAiBtn.onclick = function() {
+      var prompt = "오늘 날짜 기준으로 세계 경제 상황을 분석해주세요.\n\n" +
+        "1. 미국 달러 인덱스, WTI 유가, 미 10년물 국채 금리 현황과 의미\n" +
+        "2. 연준 금리 정책 방향과 다음 FOMC 전망\n" +
+        "3. 중국 경기 상황 (PMI, 부동산 등)\n" +
+        "4. 한국 증시에 미치는 영향\n" +
+        "5. 이번 주/월 주목해야 할 경제 지표 발표\n" +
+        "6. 투자자 관점에서의 시사점\n\n" +
+        "최신 데이터를 검색해서 한국어로 분석해주세요.";
+      window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
+    };
+  }
+
   // ===== 패널 순서 변경 JS =====
   var panelOrderRef = db.ref("panelOrder");
 
@@ -3000,7 +3231,7 @@
   // Firebase에서 저장된 순서 불러오기
   panelOrderRef.once("value", function (snap) {
     var val = snap.val();
-    if (val && Array.isArray(val) && val.length === 7) {
+    if (val && Array.isArray(val) && val.length === 8) {
       applyPanelOrder(val);
     } else {
       updatePanelBtns();
