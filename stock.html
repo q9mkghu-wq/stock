@@ -3039,12 +3039,10 @@
   });
 
   function lbGetThumbnail(url) {
-    // 유튜브 썸네일
     var ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
     if (ytMatch) {
-      return "https://img.youtube.com/vi/" + ytMatch[1] + "/mqdefault.jpg";
+      return "https://i.ytimg.com/vi/" + ytMatch[1] + "/mqdefault.jpg";
     }
-    // 일반 URL: Google 페이지 스크린샷 API
     return "https://www.google.com/s2/favicons?sz=64&domain=" + encodeURIComponent(url);
   }
 
@@ -3128,16 +3126,27 @@
       var isYt = lbIsYoutube(link.url);
 
       if (isYt) {
-        var thumbImg = document.createElement("img");
-        thumbImg.src = thumb;
-        thumbImg.style.width = "100%";
-        thumbImg.style.borderRadius = "8px";
-        thumbImg.style.marginBottom = "10px";
-        thumbImg.style.display = "block";
-        thumbImg.style.objectFit = "cover";
-        thumbImg.style.maxHeight = "160px";
-        thumbImg.onerror = function () { this.style.display = "none"; };
-        card.appendChild(thumbImg);
+        var ytMatch2 = link.url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+        var videoId = ytMatch2 ? ytMatch2[1] : null;
+        if (videoId) {
+          var thumbImg = document.createElement("img");
+          thumbImg.src = "https://i.ytimg.com/vi/" + videoId + "/mqdefault.jpg";
+          thumbImg.style.width = "100%";
+          thumbImg.style.borderRadius = "8px";
+          thumbImg.style.marginBottom = "10px";
+          thumbImg.style.display = "block";
+          thumbImg.style.objectFit = "cover";
+          thumbImg.style.maxHeight = "160px";
+          thumbImg.onerror = function () {
+            // mqdefault 실패 시 hqdefault 시도
+            if (this.src.includes("mqdefault")) {
+              this.src = "https://i.ytimg.com/vi/" + videoId + "/hqdefault.jpg";
+            } else {
+              this.style.display = "none";
+            }
+          };
+          card.appendChild(thumbImg);
+        }
       }
 
       var top = document.createElement("div");
