@@ -878,6 +878,16 @@
         </div>
         <div class="memo-write-box">
           <textarea id="memo-input" placeholder="메모할 내용을 입력하세요..."></textarea>
+          <!-- 이미지 업로드 -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <label for="memo-img-input" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text-main);">🖼️ 이미지 추가</label>
+            <input type="file" id="memo-img-input" accept="image/*" style="display:none;">
+            <span id="memo-img-name" style="font-size:12px;color:var(--text-sub);">선택된 파일 없음</span>
+            <button id="memo-img-clear" style="display:none;background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">✕ 취소</button>
+          </div>
+          <div id="memo-img-preview" style="display:none;margin-top:6px;">
+            <img id="memo-img-preview-img" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:contain;" alt="미리보기">
+          </div>
           <button class="btn-primary" id="memo-submit">저장</button>
         </div>
         <div id="memo-list"></div>
@@ -3432,6 +3442,55 @@
     if (inp) inp.addEventListener("keydown",function(e){if(e.key==="Enter")btn.click();});
   })();
 
+  // ===== 메모 이미지 업로드 =====
+  var memoImgData = null; // base64 이미지 데이터
+
+  function resizeImage(file, maxWidth, maxHeight, callback) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement("canvas");
+        var w = img.width, h = img.height;
+        if (w > maxWidth) { h = h * maxWidth / w; w = maxWidth; }
+        if (h > maxHeight) { w = w * maxHeight / h; h = maxHeight; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        callback(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  var imgInput = document.getElementById("memo-img-input");
+  if (imgInput) {
+    imgInput.onchange = function() {
+      var file = this.files[0];
+      if (!file) return;
+      document.getElementById("memo-img-name").textContent = file.name;
+      document.getElementById("memo-img-clear").style.display = "inline";
+      resizeImage(file, 800, 600, function(dataUrl) {
+        memoImgData = dataUrl;
+        var preview = document.getElementById("memo-img-preview");
+        var previewImg = document.getElementById("memo-img-preview-img");
+        previewImg.src = dataUrl;
+        preview.style.display = "block";
+      });
+    };
+  }
+
+  var imgClear = document.getElementById("memo-img-clear");
+  if (imgClear) {
+    imgClear.onclick = function() {
+      memoImgData = null;
+      document.getElementById("memo-img-input").value = "";
+      document.getElementById("memo-img-name").textContent = "선택된 파일 없음";
+      document.getElementById("memo-img-clear").style.display = "none";
+      document.getElementById("memo-img-preview").style.display = "none";
+    };
+  }
+
   // ===== 메모장 JS =====
   var memoRef = db.ref("memopad");
   var memoList = [];
@@ -3445,13 +3504,14 @@
     memoRenderList();
   });
 
-  function memoSave(id, text, style) {
+  function memoSave(id, text, style, imgData) {
     var obj = { text: text, updatedAt: Date.now() };
     if (style) {
       obj.fontSize = style.fontSize || "15px";
       obj.color = style.color || "#2C2A26";
       obj.bgColor = style.bgColor || "#FFFFFF";
     }
+    if (imgData) obj.imgData = imgData;
     if (id) {
       memoRef.child(id).update(obj);
     } else {
@@ -3630,6 +3690,16 @@
 
       item.appendChild(textEl);
       item.appendChild(editArea);
+
+      // 이미지 표시
+      if (memo.imgData) {
+        var imgEl = document.createElement("img");
+        imgEl.src = memo.imgData;
+        imgEl.style.cssText = "max-width:100%;border-radius:8px;margin-bottom:8px;display:block;";
+        imgEl.alt = "메모 이미지";
+        item.appendChild(imgEl);
+      }
+
       item.appendChild(styleBar);
       item.appendChild(dateEl);
       item.appendChild(actions);
@@ -3639,9 +3709,15 @@
 
   document.getElementById("memo-submit").onclick = function () {
     var text = document.getElementById("memo-input").value.trim();
-    if (!text) { alert("내용을 입력해주세요."); return; }
-    memoSave(null, text, { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" });
+    if (!text && !memoImgData) { alert("내용 또는 이미지를 입력해주세요."); return; }
+    memoSave(null, text || "", { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" }, memoImgData);
     document.getElementById("memo-input").value = "";
+    // 이미지 초기화
+    memoImgData = null;
+    document.getElementById("memo-img-input").value = "";
+    document.getElementById("memo-img-name").textContent = "선택된 파일 없음";
+    document.getElementById("memo-img-clear").style.display = "none";
+    document.getElementById("memo-img-preview").style.display = "none";
   };
 
   // ===== 좌우 스크롤 (버튼 + 터치 스와이프) =====
