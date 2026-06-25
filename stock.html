@@ -3567,6 +3567,9 @@
 
   // 모든 contenteditable 요소에 이벤트 위임
   document.addEventListener("mouseup", function(e) {
+    // 툴바 버튼 클릭 시에는 activeEditor 변경하지 않음
+    var toolbar = document.getElementById("memo-toolbar");
+    if (toolbar && toolbar.contains(e.target)) return;
     var el = e.target.closest ? e.target.closest("[contenteditable]") : null;
     if (el) { activeEditor = el; saveRange(); }
   });
@@ -3575,12 +3578,24 @@
     if (el) { activeEditor = el; saveRange(); }
   });
   document.addEventListener("touchend", function(e) {
+    var toolbar = document.getElementById("memo-toolbar");
+    if (toolbar && toolbar.contains(e.target)) return;
     var el = e.target.closest ? e.target.closest("[contenteditable]") : null;
     if (el) { activeEditor = el; saveRange(); }
   });
 
   // 초기 에디터 설정
   activeEditor = document.getElementById("memo-input");
+
+  // 툴바 버튼 클릭 시 에디터 포커스 유지 (mousedown preventDefault)
+  var toolbar = document.getElementById("memo-toolbar");
+  if (toolbar) {
+    toolbar.addEventListener("mousedown", function(e) {
+      // input[type=color]는 preventDefault 하면 안 됨
+      if (e.target.type === "color" || e.target.tagName === "SELECT") return;
+      e.preventDefault();
+    });
+  }
 
   var tbSize = document.getElementById("memo-tb-size");
   if (tbSize) tbSize.onchange = function() { applyStyle("fontSize", this.value); };
