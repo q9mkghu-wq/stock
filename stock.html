@@ -4111,7 +4111,10 @@
           newHtml = newHtml.replace(/<div><br><\/div>/gi, '<br>');
           newHtml = newHtml.replace(/<div>(.*?)<\/div>/gi, '<br>$1');
           newHtml = newHtml.replace(/^<br>/, '');
-          if (!newHtml) { alert("내용을 입력해주세요."); return; }
+          // 텍스트 없어도 이미지나 유튜브 링크가 있으면 저장 허용
+          if (!newHtml && !memo.imgData && editYtLinks.length === 0) {
+            alert("내용을 입력해주세요."); return;
+          }
           memo.text = newHtml;
           memo.ytLinks = editYtLinks.length > 0 ? editYtLinks : null;
           memoSave(memo.id, newHtml, memo, memo.imgData, editYtLinks.length > 0 ? editYtLinks : null);
