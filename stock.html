@@ -3508,10 +3508,17 @@
 
   // ===== 리치 텍스트 툴바 JS =====
   var savedRange = null;
+  var activeEditor = null; // 현재 포커스된 에디터 (새 메모 or 수정 editArea)
 
   function saveRange() {
     var sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) savedRange = sel.getRangeAt(0).cloneRange();
+    if (sel && sel.rangeCount > 0) {
+      savedRange = sel.getRangeAt(0).cloneRange();
+      // 현재 선택 영역이 어느 에디터에 있는지 추적
+      var container = savedRange.commonAncestorContainer;
+      var el = container.nodeType === 3 ? container.parentElement : container;
+      if (el.closest) activeEditor = el.closest("[contenteditable]") || activeEditor;
+    }
   }
 
   function restoreRange() {
@@ -3523,18 +3530,26 @@
   }
 
   function applyStyle(tag, styleAttr) {
-    var memoInput = document.getElementById("memo-input");
-    memoInput.focus();
+    // 활성 에디터가 없으면 기본 memo-input 사용
+    var target = activeEditor || document.getElementById("memo-input");
+    if (!target) return;
+    target.focus();
     restoreRange();
     var sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return; // 선택 영역 없으면 무시
+    if (!sel || sel.isCollapsed) {
+      // 선택 없이 색상 피커만 바꾼 경우 - 전체 적용
+      if (tag === "color") { target.style.color = styleAttr; return; }
+      if (tag === "highlight") { target.style.backgroundColor = styleAttr; return; }
+      if (tag === "fontSize") { target.style.fontSize = styleAttr; return; }
+    }
     document.execCommand("styleWithCSS", false, true);
     if (tag === "fontSize") {
-      // fontSize는 execCommand로 직접 적용
-      var span = document.createElement("span");
-      span.style.fontSize = styleAttr;
-      var range = sel.getRangeAt(0);
-      range.surroundContents(span);
+      try {
+        var span = document.createElement("span");
+        span.style.fontSize = styleAttr;
+        var range = sel.getRangeAt(0);
+        range.surroundContents(span);
+      } catch(e) { document.execCommand("fontSize", false, "3"); }
     } else if (tag === "color") {
       document.execCommand("foreColor", false, styleAttr);
     } else if (tag === "highlight") {
@@ -3550,13 +3565,22 @@
     }
   }
 
-  // 선택 영역 저장 (색상 피커 클릭 시 선택 해제 방지)
-  var memoEditor = document.getElementById("memo-input");
-  if (memoEditor) {
-    memoEditor.addEventListener("mouseup", saveRange);
-    memoEditor.addEventListener("keyup", saveRange);
-    memoEditor.addEventListener("touchend", saveRange);
-  }
+  // 모든 contenteditable 요소에 이벤트 위임
+  document.addEventListener("mouseup", function(e) {
+    var el = e.target.closest ? e.target.closest("[contenteditable]") : null;
+    if (el) { activeEditor = el; saveRange(); }
+  });
+  document.addEventListener("keyup", function(e) {
+    var el = e.target.closest ? e.target.closest("[contenteditable]") : null;
+    if (el) { activeEditor = el; saveRange(); }
+  });
+  document.addEventListener("touchend", function(e) {
+    var el = e.target.closest ? e.target.closest("[contenteditable]") : null;
+    if (el) { activeEditor = el; saveRange(); }
+  });
+
+  // 초기 에디터 설정
+  activeEditor = document.getElementById("memo-input");
 
   var tbSize = document.getElementById("memo-tb-size");
   if (tbSize) tbSize.onchange = function() { applyStyle("fontSize", this.value); };
@@ -3874,6 +3898,7 @@
         if (!isEditing) {
           textEl.style.display = "none";
           editArea.style.display = "block";
+          activeEditor = editArea; // 툴바가 editArea에 적용되도록
           editArea.focus();
           editBtn.textContent = "💾";
         } else {
@@ -3888,6 +3913,7 @@
           textEl.innerHTML = newHtml;
           textEl.style.display = "block";
           editArea.style.display = "none";
+          activeEditor = document.getElementById("memo-input"); // 기본 에디터로 복원
           editBtn.textContent = "✎";
         }
       };
