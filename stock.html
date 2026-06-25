@@ -942,15 +942,14 @@
             <button id="memo-yt-add" style="padding:10px 14px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;">추가</button>
           </div>
 
-          <!-- 이미지 업로드 -->
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <label for="memo-img-input" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text-main);">🖼️ 이미지 추가</label>
-            <input type="file" id="memo-img-input" accept="image/*" style="display:none;">
-            <span id="memo-img-name" style="font-size:12px;color:var(--text-sub);">선택된 파일 없음</span>
-            <button id="memo-img-clear" style="display:none;background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;">✕ 취소</button>
-          </div>
-          <div id="memo-img-preview" style="display:none;margin-top:6px;">
-            <img id="memo-img-preview-img" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:contain;" alt="미리보기">
+          <!-- 이미지 여러 장 업로드 -->
+          <div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+              <label for="memo-img-input" style="padding:8px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text-main);">🖼️ 이미지 추가</label>
+              <input type="file" id="memo-img-input" accept="image/*" multiple style="display:none;">
+              <span id="memo-img-count" style="font-size:12px;color:var(--text-sub);">0장</span>
+            </div>
+            <div id="memo-img-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
           </div>
           <button class="btn-primary" id="memo-submit">저장</button>
         </div>
@@ -3685,8 +3684,6 @@
   }
 
   // ===== 메모 이미지 업로드 =====
-  var memoImgData = null; // base64 이미지 데이터
-
   function resizeImage(file, maxWidth, maxHeight, callback) {
     var reader = new FileReader();
     reader.onload = function(e) {
@@ -3705,31 +3702,46 @@
     reader.readAsDataURL(file);
   }
 
+  var memoImgList = []; // 여러 장 이미지 배열
+
+  function renderMemoImgList() {
+    var listEl = document.getElementById("memo-img-list");
+    var countEl = document.getElementById("memo-img-count");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    if (countEl) countEl.textContent = memoImgList.length + "장";
+    memoImgList.forEach(function(dataUrl, idx) {
+      var wrap = document.createElement("div");
+      wrap.style.cssText = "position:relative;display:inline-block;";
+      var img = document.createElement("img");
+      img.src = dataUrl;
+      img.style.cssText = "width:80px;height:80px;object-fit:cover;border-radius:8px;display:block;";
+      var del = document.createElement("button");
+      del.textContent = "✕";
+      del.style.cssText = "position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;";
+      del.onclick = function() {
+        memoImgList.splice(idx, 1);
+        renderMemoImgList();
+      };
+      wrap.appendChild(img);
+      wrap.appendChild(del);
+      listEl.appendChild(wrap);
+    });
+  }
+
   var imgInput = document.getElementById("memo-img-input");
   if (imgInput) {
     imgInput.onchange = function() {
-      var file = this.files[0];
-      if (!file) return;
-      document.getElementById("memo-img-name").textContent = file.name;
-      document.getElementById("memo-img-clear").style.display = "inline";
-      resizeImage(file, 800, 600, function(dataUrl) {
-        memoImgData = dataUrl;
-        var preview = document.getElementById("memo-img-preview");
-        var previewImg = document.getElementById("memo-img-preview-img");
-        previewImg.src = dataUrl;
-        preview.style.display = "block";
+      var files = Array.from(this.files);
+      var pending = files.length;
+      files.forEach(function(file) {
+        resizeImage(file, 800, 600, function(dataUrl) {
+          memoImgList.push(dataUrl);
+          pending--;
+          if (pending === 0) renderMemoImgList();
+        });
       });
-    };
-  }
-
-  var imgClear = document.getElementById("memo-img-clear");
-  if (imgClear) {
-    imgClear.onclick = function() {
-      memoImgData = null;
-      document.getElementById("memo-img-input").value = "";
-      document.getElementById("memo-img-name").textContent = "선택된 파일 없음";
-      document.getElementById("memo-img-clear").style.display = "none";
-      document.getElementById("memo-img-preview").style.display = "none";
+      this.value = "";
     };
   }
 
@@ -3755,15 +3767,17 @@
     memoRenderList();
   });
 
-  function memoSave(id, text, style, imgData, ytLinks) {
+  function memoSave(id, text, style, imgList, ytLinks) {
     var obj = { text: text, updatedAt: Date.now() };
     if (style) {
       obj.fontSize = style.fontSize || "15px";
       obj.color = style.color || "#2C2A26";
       obj.bgColor = style.bgColor || "#FFFFFF";
     }
-    if (imgData) obj.imgData = imgData;
+    if (imgList && imgList.length > 0) obj.imgList = imgList;
+    else obj.imgList = null;
     if (ytLinks && ytLinks.length > 0) obj.ytLinks = ytLinks;
+    else obj.ytLinks = null;
     if (id) {
       memoRef.child(id).update(obj);
     } else {
@@ -3924,6 +3938,74 @@
       editToolbar.appendChild(etColorWrap);
       editToolbar.appendChild(etHlWrap);
       editToolbar.appendChild(etClear);
+
+      // 이미지 수정 섹션
+      var imgEditSection = document.createElement("div");
+      imgEditSection.style.cssText = "width:100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);";
+
+      var imgEditTitle = document.createElement("div");
+      imgEditTitle.style.cssText = "font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;";
+      imgEditTitle.textContent = "🖼️ 이미지 관리";
+      imgEditSection.appendChild(imgEditTitle);
+
+      // 현재 이미지 미리보기
+      var editImgList = memo.imgList ? memo.imgList.slice() : (memo.imgData ? [memo.imgData] : []);
+
+      function renderEditImgPreview() {
+        imgPreviewRow.innerHTML = "";
+        if (editImgList.length === 0) {
+          var noImg = document.createElement("span");
+          noImg.style.cssText = "font-size:12px;color:var(--text-sub);";
+          noImg.textContent = "이미지 없음";
+          imgPreviewRow.appendChild(noImg);
+        } else {
+          var grid = document.createElement("div");
+          grid.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+          editImgList.forEach(function(dataUrl, idx) {
+            var wrap = document.createElement("div");
+            wrap.style.cssText = "position:relative;display:inline-block;";
+            var img = document.createElement("img");
+            img.src = dataUrl;
+            img.style.cssText = "width:80px;height:80px;object-fit:cover;border-radius:8px;display:block;";
+            var delBtn = document.createElement("button");
+            delBtn.textContent = "✕";
+            delBtn.style.cssText = "position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;padding:0;";
+            delBtn.addEventListener("mousedown", function(e) { e.preventDefault(); });
+            delBtn.onclick = function() { editImgList.splice(idx, 1); renderEditImgPreview(); };
+            wrap.appendChild(img);
+            wrap.appendChild(delBtn);
+            grid.appendChild(wrap);
+          });
+          imgPreviewRow.appendChild(grid);
+        }
+      }
+      renderEditImgPreview();
+      imgEditSection.appendChild(imgPreviewRow);
+
+      // 이미지 추가 버튼
+      var imgEditInput = document.createElement("input");
+      imgEditInput.type = "file";
+      imgEditInput.accept = "image/*";
+      imgEditInput.multiple = true;
+      imgEditInput.style.display = "none";
+      var imgEditLabel = document.createElement("label");
+      imgEditLabel.style.cssText = "display:inline-block;padding:6px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text-main);";
+      imgEditLabel.textContent = "🖼️ 이미지 변경";
+      imgEditLabel.appendChild(imgEditInput);
+      imgEditInput.onchange = function() {
+        var files = Array.from(this.files);
+        var pending = files.length;
+        files.forEach(function(file) {
+          resizeImage(file, 800, 600, function(dataUrl) {
+            editImgList.push(dataUrl);
+            pending--;
+            if (pending === 0) renderEditImgPreview();
+          });
+        });
+        this.value = "";
+      };
+      imgEditSection.appendChild(imgEditLabel);
+      editToolbar.appendChild(imgEditSection);
 
       // 유튜브 링크 수정 섹션
       var ytEditSection = document.createElement("div");
@@ -4112,18 +4194,34 @@
           newHtml = newHtml.replace(/<div>(.*?)<\/div>/gi, '<br>$1');
           newHtml = newHtml.replace(/^<br>/, '');
           // 텍스트 없어도 이미지나 유튜브 링크가 있으면 저장 허용
-          if (!newHtml && !memo.imgData && editYtLinks.length === 0) {
+          if (!newHtml && !editImgData && editYtLinks.length === 0) {
             alert("내용을 입력해주세요."); return;
           }
           memo.text = newHtml;
+          memo.imgList = editImgList.length > 0 ? editImgList : null;
           memo.ytLinks = editYtLinks.length > 0 ? editYtLinks : null;
-          memoSave(memo.id, newHtml, memo, memo.imgData, editYtLinks.length > 0 ? editYtLinks : null);
+          memoSave(memo.id, newHtml, memo, editImgList.length > 0 ? editImgList : null, editYtLinks.length > 0 ? editYtLinks : null);
           textEl.innerHTML = newHtml;
           textEl.style.display = "block";
           editArea.style.display = "none";
           editToolbar.style.display = "none";
           activeEditor = document.getElementById("memo-input");
           editBtn.textContent = "✎";
+          // 이미지 표시 업데이트
+          var existingImgWrap = item.querySelector(".memo-img-wrap");
+          if (existingImgWrap) existingImgWrap.remove();
+          if (editImgList.length > 0) {
+            var newImgWrap = document.createElement("div");
+            newImgWrap.className = "memo-img-wrap";
+            newImgWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;";
+            editImgList.forEach(function(dataUrl) {
+              var newImgEl = document.createElement("img");
+              newImgEl.src = dataUrl;
+              newImgEl.style.cssText = "max-width:100%;border-radius:8px;display:block;";
+              newImgWrap.appendChild(newImgEl);
+            });
+            item.insertBefore(newImgWrap, styleBar);
+          }
         }
       };
 
@@ -4142,13 +4240,21 @@
       item.appendChild(editToolbar);
       item.appendChild(editArea);
 
-      // 이미지 표시
-      if (memo.imgData) {
-        var imgEl = document.createElement("img");
-        imgEl.src = memo.imgData;
-        imgEl.style.cssText = "max-width:100%;border-radius:8px;margin-bottom:8px;display:block;";
-        imgEl.alt = "메모 이미지";
-        item.appendChild(imgEl);
+      // 이미지 여러 장 표시
+      var imgListData = memo.imgList || (memo.imgData ? [memo.imgData] : []);
+      if (imgListData.length > 0) {
+        var imgWrap = document.createElement("div");
+        imgWrap.className = "memo-img-wrap";
+        imgWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;";
+        imgListData.forEach(function(dataUrl) {
+          var img = document.createElement("img");
+          img.src = dataUrl;
+          img.className = "memo-edit-img";
+          img.style.cssText = "max-width:100%;border-radius:8px;display:block;";
+          img.alt = "메모 이미지";
+          imgWrap.appendChild(img);
+        });
+        item.appendChild(imgWrap);
       }
 
       // 유튜브 링크 여러 개 표시
@@ -4195,17 +4301,14 @@
     html = html.replace(/<div>(.*?)<\/div>/gi, '<br>$1');
     html = html.replace(/^<br>/, '');
     var text = editor.innerText.trim();
-    if (!text && !memoImgData && memoYtLinks.length === 0) { alert("내용, 이미지 또는 유튜브 링크를 입력해주세요."); return; }
-    memoSave(null, html || "", { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" }, memoImgData, memoYtLinks.length > 0 ? memoYtLinks : null);
+    if (!text && memoImgList.length === 0 && memoYtLinks.length === 0) { alert("내용, 이미지 또는 유튜브 링크를 입력해주세요."); return; }
+    memoSave(null, html || "", { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" }, memoImgList.length > 0 ? memoImgList : null, memoYtLinks.length > 0 ? memoYtLinks : null);
     editor.innerHTML = "";
     memoYtLinks = [];
     renderMemoYtList();
+    memoImgList = [];
+    renderMemoImgList();
     document.getElementById("memo-yt-input").value = "";
-    memoImgData = null;
-    document.getElementById("memo-img-input").value = "";
-    document.getElementById("memo-img-name").textContent = "선택된 파일 없음";
-    document.getElementById("memo-img-clear").style.display = "none";
-    document.getElementById("memo-img-preview").style.display = "none";
   };
 
   // ===== 좌우 스크롤 (버튼 + 터치 스와이프) =====
