@@ -3785,8 +3785,15 @@
       textEl.className = "memo-item-text";
       // 기존 평문 메모의 줄바꿈을 <br>로 변환, HTML 태그가 이미 있으면 그대로 표시
       var memoHtml = memo.text || "";
-      if (memoHtml && !memoHtml.includes('<') ) {
-        memoHtml = memoHtml.replace(/\n/g, '<br>');
+      // HTML 태그가 없는 순수 텍스트면 \n을 <br>로 변환
+      // HTML 태그가 있으면 그대로 표시 (리치 텍스트로 저장된 경우)
+      var hasHtmlTags = /<[a-z][\s\S]*>/i.test(memoHtml);
+      if (!hasHtmlTags) {
+        memoHtml = memoHtml
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
       }
       textEl.innerHTML = memoHtml;
       textEl.style.fontSize = memo.fontSize || "15px";
@@ -3794,7 +3801,17 @@
 
       var editArea = document.createElement("div");
       editArea.contentEditable = "true";
-      editArea.innerHTML = memo.text;
+      // 기존 평문 메모도 줄바꿈 유지
+      var editHtml = memo.text || "";
+      var editHasHtml = /<[a-z][\s\S]*>/i.test(editHtml);
+      if (!editHasHtml) {
+        editHtml = editHtml
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>');
+      }
+      editArea.innerHTML = editHtml;
       editArea.style.display = "none";
       editArea.style.width = "100%";
       editArea.style.minHeight = "60px";
