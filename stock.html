@@ -3741,6 +3741,15 @@
     memoList = val ? Object.keys(val).map(function (k) {
       return Object.assign({ id: k }, val[k]);
     }).sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }) : [];
+
+    // 기존 평문 메모 마이그레이션: \n → <br> 변환 후 저장
+    memoList.forEach(function(memo) {
+      if (memo.text && !/<[a-z][\s\S]*>/i.test(memo.text) && memo.text.includes('\n')) {
+        var converted = memo.text.replace(/\n/g, '<br>');
+        memoRef.child(memo.id).update({ text: converted });
+      }
+    });
+
     memoRenderList();
   });
 
@@ -3786,14 +3795,9 @@
       // 기존 평문 메모의 줄바꿈을 <br>로 변환, HTML 태그가 이미 있으면 그대로 표시
       var memoHtml = memo.text || "";
       // HTML 태그가 없는 순수 텍스트면 \n을 <br>로 변환
-      // HTML 태그가 있으면 그대로 표시 (리치 텍스트로 저장된 경우)
       var hasHtmlTags = /<[a-z][\s\S]*>/i.test(memoHtml);
       if (!hasHtmlTags) {
-        memoHtml = memoHtml
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/\n/g, '<br>');
+        memoHtml = memoHtml.replace(/\n/g, '<br>');
       }
       textEl.innerHTML = memoHtml;
       textEl.style.fontSize = memo.fontSize || "15px";
