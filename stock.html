@@ -3799,16 +3799,108 @@
       editArea.style.width = "100%";
       editArea.style.minHeight = "60px";
       editArea.style.padding = "10px 12px";
-      editArea.style.border = "1px solid var(--border)";
+      editArea.style.border = "1px solid var(--accent)";
       editArea.style.borderRadius = "8px";
       editArea.style.fontSize = memo.fontSize || "15px";
       editArea.style.fontFamily = "inherit";
       editArea.style.outline = "none";
       editArea.style.background = "#fff";
       editArea.style.lineHeight = "1.6";
-      editArea.style.marginBottom = "8px";
+      editArea.style.marginBottom = "6px";
       editArea.style.boxSizing = "border-box";
       editArea.style.wordBreak = "break-word";
+
+      // 수정 전용 툴바
+      var editToolbar = document.createElement("div");
+      editToolbar.style.cssText = "display:none;flex-wrap:wrap;gap:6px;padding:8px;background:#f9f7f4;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;";
+
+      function makeEditTbBtn(label, title, style) {
+        var b = document.createElement("button");
+        b.textContent = label;
+        b.title = title;
+        b.className = "memo-tb-btn";
+        if (style) b.style.cssText += style;
+        b.addEventListener("mousedown", function(e) { e.preventDefault(); });
+        return b;
+      }
+
+      // 글씨 크기
+      var etSize = document.createElement("select");
+      etSize.style.cssText = "padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:13px;";
+      ["12px","14px","15px","16px","18px","20px","24px","28px","32px"].forEach(function(sz) {
+        var opt = document.createElement("option");
+        opt.value = sz; opt.textContent = sz;
+        if ((memo.fontSize||"15px") === sz) opt.selected = true;
+        etSize.appendChild(opt);
+      });
+      etSize.addEventListener("mousedown", function(e) { e.stopPropagation(); });
+      etSize.onchange = function() {
+        editArea.focus();
+        var sel = window.getSelection();
+        if (sel && !sel.isCollapsed) {
+          try {
+            var sp = document.createElement("span");
+            sp.style.fontSize = this.value;
+            sel.getRangeAt(0).surroundContents(sp);
+          } catch(e) {}
+        }
+      };
+
+      var etBold = makeEditTbBtn("B","굵게","font-weight:800;");
+      etBold.onclick = function() { editArea.focus(); document.execCommand("bold"); };
+
+      var etItalic = makeEditTbBtn("I","기울기","font-style:italic;");
+      etItalic.onclick = function() { editArea.focus(); document.execCommand("italic"); };
+
+      var etUnder = makeEditTbBtn("U","밑줄","text-decoration:underline;");
+      etUnder.onclick = function() { editArea.focus(); document.execCommand("underline"); };
+
+      var sep = document.createElement("div");
+      sep.style.cssText = "width:1px;background:var(--border);margin:0 2px;";
+
+      // 글씨 색
+      var etColorWrap = document.createElement("div");
+      etColorWrap.style.cssText = "display:flex;align-items:center;gap:3px;";
+      var etColorLbl = document.createElement("span");
+      etColorLbl.textContent = "글씨"; etColorLbl.style.cssText = "font-size:11px;color:var(--text-sub);";
+      var etColor = document.createElement("input");
+      etColor.type = "color"; etColor.value = "#2C2A26";
+      etColor.style.cssText = "width:28px;height:26px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;";
+      etColor.onchange = function() {
+        editArea.focus();
+        document.execCommand("styleWithCSS", false, true);
+        document.execCommand("foreColor", false, this.value);
+      };
+      etColorWrap.appendChild(etColorLbl);
+      etColorWrap.appendChild(etColor);
+
+      // 형광펜
+      var etHlWrap = document.createElement("div");
+      etHlWrap.style.cssText = "display:flex;align-items:center;gap:3px;";
+      var etHlLbl = document.createElement("span");
+      etHlLbl.textContent = "형광펜"; etHlLbl.style.cssText = "font-size:11px;color:var(--text-sub);";
+      var etHl = document.createElement("input");
+      etHl.type = "color"; etHl.value = "#FFFF00";
+      etHl.style.cssText = "width:28px;height:26px;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:1px;";
+      etHl.onchange = function() {
+        editArea.focus();
+        document.execCommand("styleWithCSS", false, true);
+        document.execCommand("hiliteColor", false, this.value);
+      };
+      etHlWrap.appendChild(etHlLbl);
+      etHlWrap.appendChild(etHl);
+
+      var etClear = makeEditTbBtn("✕서식","서식 제거","font-size:11px;");
+      etClear.onclick = function() { editArea.focus(); document.execCommand("removeFormat"); };
+
+      editToolbar.appendChild(etSize);
+      editToolbar.appendChild(etBold);
+      editToolbar.appendChild(etItalic);
+      editToolbar.appendChild(etUnder);
+      editToolbar.appendChild(sep);
+      editToolbar.appendChild(etColorWrap);
+      editToolbar.appendChild(etHlWrap);
+      editToolbar.appendChild(etClear);
 
       // 스타일 툴바
       var styleBar = document.createElement("div");
@@ -3913,12 +4005,19 @@
         if (!isEditing) {
           textEl.style.display = "none";
           editArea.style.display = "block";
-          activeEditor = editArea; // 툴바가 editArea에 적용되도록
+          editToolbar.style.display = "flex";
+          activeEditor = editArea;
           editArea.focus();
+          // 커서를 끝으로
+          var range = document.createRange();
+          range.selectNodeContents(editArea);
+          range.collapse(false);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
           editBtn.textContent = "💾";
         } else {
           var newHtml = editArea.innerHTML.trim();
-          // contenteditable의 <div> 줄바꿈을 <br>로 정규화
           newHtml = newHtml.replace(/<div><br><\/div>/gi, '<br>');
           newHtml = newHtml.replace(/<div>(.*?)<\/div>/gi, '<br>$1');
           newHtml = newHtml.replace(/^<br>/, '');
@@ -3928,7 +4027,8 @@
           textEl.innerHTML = newHtml;
           textEl.style.display = "block";
           editArea.style.display = "none";
-          activeEditor = document.getElementById("memo-input"); // 기본 에디터로 복원
+          editToolbar.style.display = "none";
+          activeEditor = document.getElementById("memo-input");
           editBtn.textContent = "✎";
         }
       };
@@ -3945,6 +4045,7 @@
       actions.appendChild(delBtn);
 
       item.appendChild(textEl);
+      item.appendChild(editToolbar);
       item.appendChild(editArea);
 
       // 이미지 표시
