@@ -3744,7 +3744,12 @@
 
       var textEl = document.createElement("div");
       textEl.className = "memo-item-text";
-      textEl.innerHTML = memo.text; // HTML 서식 그대로 표시
+      // 기존 평문 메모의 줄바꿈을 <br>로 변환, HTML 태그가 이미 있으면 그대로 표시
+      var memoHtml = memo.text || "";
+      if (memoHtml && !memoHtml.includes('<') ) {
+        memoHtml = memoHtml.replace(/\n/g, '<br>');
+      }
+      textEl.innerHTML = memoHtml;
       textEl.style.fontSize = memo.fontSize || "15px";
       textEl.style.color = memo.color || "#2C2A26";
 
@@ -3873,9 +3878,16 @@
           editBtn.textContent = "💾";
         } else {
           var newHtml = editArea.innerHTML.trim();
+          // contenteditable의 <div> 줄바꿈을 <br>로 정규화
+          newHtml = newHtml.replace(/<div><br><\/div>/gi, '<br>');
+          newHtml = newHtml.replace(/<div>(.*?)<\/div>/gi, '<br>$1');
+          newHtml = newHtml.replace(/^<br>/, '');
           if (!newHtml) { alert("내용을 입력해주세요."); return; }
           memo.text = newHtml;
           memoSave(memo.id, newHtml, memo);
+          textEl.innerHTML = newHtml;
+          textEl.style.display = "block";
+          editArea.style.display = "none";
           editBtn.textContent = "✎";
         }
       };
@@ -3940,6 +3952,10 @@
   document.getElementById("memo-submit").onclick = function () {
     var editor = document.getElementById("memo-input");
     var html = editor.innerHTML.trim();
+    // contenteditable div 줄바꿈 정규화
+    html = html.replace(/<div><br><\/div>/gi, '<br>');
+    html = html.replace(/<div>(.*?)<\/div>/gi, '<br>$1');
+    html = html.replace(/^<br>/, '');
     var text = editor.innerText.trim();
     if (!text && !memoImgData && memoYtLinks.length === 0) { alert("내용, 이미지 또는 유튜브 링크를 입력해주세요."); return; }
     memoSave(null, html || "", { fontSize: "15px", color: "#2C2A26", bgColor: "#FFFFFF" }, memoImgData, memoYtLinks.length > 0 ? memoYtLinks : null);
