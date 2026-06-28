@@ -933,8 +933,30 @@
             </div>
             <textarea id="brief-tts-text" placeholder="Claude AI 결과를 여기에 붙여넣으세요...&#10;&#10;💡 TIP: Claude.ai 결과창에서 복사 후 여기 길게 눌러서 붙여넣기" style="width:100%;min-height:140px;padding:10px 12px;border:1px solid #c5b8d0;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.6;"></textarea>
 
+            <!-- 자연스러운 TTS 바로가기 -->
+            <div style="margin-top:10px;padding:10px;background:#f0edf7;border-radius:10px;margin-bottom:10px;">
+              <div style="font-size:12px;font-weight:700;color:#6D6875;margin-bottom:6px;">🔊 더 자연스러운 목소리로 듣기</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button id="brief-clova-btn" style="padding:7px 12px;background:#03C75A;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🟢 클로바 더빙</button>
+                <button id="brief-elevenlabs-btn" style="padding:7px 12px;background:#1A1A1A;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">🔊 ElevenLabs</button>
+                <button id="brief-tts-setup-btn" style="padding:7px 12px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text-main);">⚙️ 목소리 설정 안내</button>
+              </div>
+            </div>
+
+            <!-- 목소리 설정 안내 (숨김) -->
+            <div id="brief-tts-guide" style="display:none;background:#fff3cd;border-radius:10px;padding:12px;margin-bottom:10px;font-size:12px;line-height:1.8;color:#333;">
+              <b>🖥️ Windows PC</b><br>
+              설정 → 시간 및 언어 → 언어 → 한국어 → 옵션 → 음성<br>
+              <b>Microsoft Heami</b> 또는 <b>Microsoft SunHi</b> 다운로드 후 재시작<br><br>
+              <b>📱 Android</b><br>
+              설정 → 일반관리 → 텍스트 음성 변환 → Google TTS 선택<br>
+              한국어 고품질 음성 데이터 다운로드<br><br>
+              <b>🍎 iPhone/iPad</b><br>
+              설정 → 손쉬운 사용 → 말하기 → 목소리 → 한국어 → 향상된 음성 다운로드
+            </div>
+
             <!-- TTS 버튼 -->
-            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;">
               <button id="brief-tts-play" style="flex:1;padding:13px;background:#6D6875;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;">🔊 읽기 시작</button>
               <button id="brief-tts-pause" style="padding:13px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;" disabled>⏸ 일시정지</button>
               <button id="brief-tts-stop" style="padding:13px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;" disabled>⏹ 정지</button>
@@ -2872,8 +2894,37 @@
     });
   };
 
-  // TTS - 브리핑 전용
-  var briefUtterance = null;
+  // 클로바 더빙 버튼 - 텍스트 복사 후 클로바로 이동
+  document.getElementById("brief-clova-btn").onclick = function() {
+    var text = document.getElementById("brief-tts-text").value.trim();
+    if (text) {
+      navigator.clipboard.writeText(text).catch(function(){});
+    }
+    window.open("https://clovadubbing.naver.com", "_blank");
+    setTimeout(function() {
+      alert("클로바 더빙이 열렸어요!\n\n사용법:\n1. 새 프로젝트 만들기\n2. 텍스트 붙여넣기 (Ctrl+V)\n3. 목소리 선택 후 재생");
+    }, 500);
+  };
+
+  // ElevenLabs 버튼
+  document.getElementById("brief-elevenlabs-btn").onclick = function() {
+    var text = document.getElementById("brief-tts-text").value.trim();
+    if (text) {
+      navigator.clipboard.writeText(text).catch(function(){});
+    }
+    window.open("https://elevenlabs.io/text-to-speech", "_blank");
+    setTimeout(function() {
+      alert("ElevenLabs가 열렸어요!\n\n사용법:\n1. 텍스트 붙여넣기 (Ctrl+V)\n2. 한국어 목소리 선택\n3. Generate 클릭");
+    }, 500);
+  };
+
+  // 목소리 설정 안내 버튼
+  document.getElementById("brief-tts-setup-btn").onclick = function() {
+    var guide = document.getElementById("brief-tts-guide");
+    var isOpen = guide.style.display !== "none";
+    guide.style.display = isOpen ? "none" : "block";
+    this.textContent = isOpen ? "⚙️ 목소리 설정 안내" : "⚙️ 안내 닫기";
+  };
   var briefPaused = false;
 
   function briefTtsLoadVoices() {
