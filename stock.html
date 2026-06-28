@@ -392,7 +392,21 @@
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 
-  /* 글로벌 이코노미 나침반 */
+  .brief-topic-btn {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #c5b8d0;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6D6875;
+    cursor: pointer;
+  }
+  .brief-topic-btn.active {
+    background: #6D6875;
+    border-color: #6D6875;
+    color: #fff;
+  }
   .eco-widget { background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center; }
   .eco-widget-icon { font-size:20px;margin-bottom:2px; }
   .eco-widget-label { font-size:10px;color:var(--text-sub);margin-bottom:4px; }
@@ -891,6 +905,45 @@
           <div id="ai-tts-status" style="font-size:13px;color:var(--text-sub);margin-top:8px;text-align:center;"></div>
         </div>
         <div style="font-size:11px;color:var(--text-sub);margin-top:10px;text-align:right;">⚠️ AI 분석은 참고용이며 투자 결정의 최종 책임은 본인에게 있습니다.</div>
+
+        <!-- 오늘의 세계 브리핑 -->
+        <div style="border:2.5px solid #6D6875;border-radius:16px;padding:14px;background:linear-gradient(135deg,#f8f6ff 0%,#ffffff 100%);margin-top:20px;">
+          <div style="font-size:19px;font-weight:800;color:#6D6875;margin-bottom:6px;">🌍 오늘의 세계 브리핑</div>
+          <p style="font-size:13px;color:var(--text-sub);margin-bottom:12px;">경제·사회·문화·종교·국제 이슈를 고등학생도 이해할 수 있는 쉬운 말로 정리해드립니다.</p>
+
+          <!-- 카테고리 선택 -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="brief-topic-chips">
+            <button class="brief-topic-btn active" data-topic="all">🌐 전체 브리핑</button>
+            <button class="brief-topic-btn" data-topic="economy">💰 경제</button>
+            <button class="brief-topic-btn" data-topic="social">👥 사회</button>
+            <button class="brief-topic-btn" data-topic="culture">🎭 문화</button>
+            <button class="brief-topic-btn" data-topic="religion">🕌 종교</button>
+            <button class="brief-topic-btn" data-topic="politics">🏛️ 정치·외교</button>
+            <button class="brief-topic-btn" data-topic="science">🔬 과학·기술</button>
+          </div>
+
+          <button id="brief-ai-btn" style="width:100%;padding:13px;background:#6D6875;color:#fff;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:6px;">🌍 Claude AI로 브리핑 받기 →</button>
+          <div style="font-size:11px;color:var(--text-sub);text-align:center;margin-bottom:14px;">Claude.ai 새창으로 열립니다.</div>
+
+          <!-- 브리핑 결과 붙여넣기 + TTS -->
+          <div style="border:1.5px solid #c5b8d0;border-radius:14px;padding:14px;background:#faf8ff;">
+            <div style="font-size:14px;font-weight:700;color:#6D6875;margin-bottom:8px;">📋 브리핑 붙여넣기 → 🔊 읽어주기</div>
+            <textarea id="brief-tts-text" placeholder="Claude AI 브리핑 결과를 여기에 붙여넣으세요..." style="width:100%;min-height:120px;padding:10px 12px;border:1px solid #c5b8d0;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+              <button id="brief-tts-play" style="flex:1;padding:13px;background:#6D6875;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;">🔊 읽기 시작</button>
+              <button id="brief-tts-pause" style="padding:13px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;" disabled>⏸ 일시정지</button>
+              <button id="brief-tts-stop" style="padding:13px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;" disabled>⏹ 정지</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:var(--text-sub);">속도</span>
+              <input type="range" id="brief-tts-rate" min="0.5" max="2" step="0.1" value="1" style="flex:1;min-width:80px;">
+              <span id="brief-tts-rate-val" style="font-size:12px;color:var(--text-sub);min-width:30px;">1.0x</span>
+              <span style="font-size:12px;color:var(--text-sub);">목소리</span>
+              <select id="brief-tts-voice" style="padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:12px;"></select>
+            </div>
+            <div id="brief-tts-status" style="font-size:12px;color:var(--text-sub);margin-top:6px;text-align:center;"></div>
+          </div>
+        </div>
       </div>
 
       <!-- 메모장 (날씨 포함) -->
@@ -2755,6 +2808,119 @@
     var claudeUrl = "https://claude.ai/new?q=" + encodeURIComponent(prompt);
     window.open(claudeUrl, "_blank");
   });
+
+  // ===== 오늘의 세계 브리핑 JS =====
+  var briefSelectedTopic = "all";
+
+  var briefPrompts = {
+    all: "오늘 날짜 기준으로 전 세계에서 일어나는 주요 이슈를 경제·사회·문화·종교·정치·과학 분야별로 정리해주세요.",
+    economy: "오늘 전 세계 경제 분야의 주요 뉴스와 이슈를 정리해주세요.",
+    social: "오늘 전 세계 사회 분야의 주요 이슈(인권, 노동, 환경, 빈곤 등)를 정리해주세요.",
+    culture: "오늘 전 세계 문화·예술·스포츠·엔터테인먼트 분야의 주요 이슈를 정리해주세요.",
+    religion: "오늘 전 세계 종교·철학·윤리 분야의 주요 이슈를 정리해주세요.",
+    politics: "오늘 전 세계 정치·외교·안보 분야의 주요 이슈를 정리해주세요.",
+    science: "오늘 전 세계 과학·기술·AI·우주 분야의 주요 이슈를 정리해주세요."
+  };
+
+  // 토픽 칩 클릭
+  document.getElementById("brief-topic-chips").addEventListener("click", function(e) {
+    var btn = e.target.closest(".brief-topic-btn");
+    if (!btn) return;
+    document.querySelectorAll(".brief-topic-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    briefSelectedTopic = btn.dataset.topic;
+  });
+
+  // Claude AI 브리핑 버튼
+  document.getElementById("brief-ai-btn").onclick = function() {
+    var prompt = briefPrompts[briefSelectedTopic] +
+      "\n\n다음 조건으로 작성해주세요:\n" +
+      "- 어려운 전문 용어는 피하고 쉬운 말로 설명\n" +
+      "- 고등학생도 이해할 수 있는 수준\n" +
+      "- 각 분야별로 2~3줄 요약\n" +
+      "- 왜 중요한지 한 줄 설명 포함\n" +
+      "- 최신 뉴스를 검색해서 오늘 날짜 기준으로 작성\n" +
+      "- 한국어로 작성";
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
+  };
+
+  // TTS - 브리핑 전용
+  var briefUtterance = null;
+  var briefPaused = false;
+
+  function briefTtsLoadVoices() {
+    var sel = document.getElementById("brief-tts-voice");
+    if (!sel) return;
+    var voices = window.speechSynthesis.getVoices();
+    sel.innerHTML = "";
+    var koVoices = voices.filter(function(v) { return v.lang.startsWith("ko"); });
+    var allVoices = koVoices.concat(voices.filter(function(v) { return !v.lang.startsWith("ko"); }));
+    if (allVoices.length === 0) {
+      var opt = document.createElement("option"); opt.textContent = "기본 목소리"; sel.appendChild(opt); return;
+    }
+    allVoices.forEach(function(v, i) {
+      var opt = document.createElement("option");
+      opt.value = i; opt.textContent = v.name + " (" + v.lang + ")";
+      opt.dataset.idx = voices.indexOf(v);
+      sel.appendChild(opt);
+    });
+  }
+
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.addEventListener("voiceschanged", briefTtsLoadVoices);
+  }
+  briefTtsLoadVoices();
+
+  document.getElementById("brief-tts-rate").oninput = function() {
+    document.getElementById("brief-tts-rate-val").textContent = parseFloat(this.value).toFixed(1) + "x";
+  };
+
+  document.getElementById("brief-tts-play").onclick = function() {
+    var text = document.getElementById("brief-tts-text").value.trim();
+    if (!text) { alert("브리핑 내용을 붙여넣어 주세요."); return; }
+    window.speechSynthesis.cancel();
+    briefPaused = false;
+    briefUtterance = new SpeechSynthesisUtterance(text);
+    briefUtterance.rate = parseFloat(document.getElementById("brief-tts-rate").value);
+    briefUtterance.lang = "ko-KR";
+    var sel = document.getElementById("brief-tts-voice");
+    var voices = window.speechSynthesis.getVoices();
+    var selOpt = sel.options[sel.selectedIndex];
+    if (selOpt && selOpt.dataset.idx !== undefined) {
+      briefUtterance.voice = voices[parseInt(selOpt.dataset.idx)];
+    }
+    briefUtterance.onstart = function() {
+      document.getElementById("brief-tts-status").textContent = "🔊 읽는 중...";
+      document.getElementById("brief-tts-pause").disabled = false;
+      document.getElementById("brief-tts-stop").disabled = false;
+    };
+    briefUtterance.onend = function() {
+      document.getElementById("brief-tts-status").textContent = "✅ 읽기 완료";
+      document.getElementById("brief-tts-pause").disabled = true;
+      document.getElementById("brief-tts-stop").disabled = true;
+    };
+    window.speechSynthesis.speak(briefUtterance);
+  };
+
+  document.getElementById("brief-tts-pause").onclick = function() {
+    if (!briefPaused) {
+      window.speechSynthesis.pause(); briefPaused = true;
+      this.textContent = "▶ 재개";
+      document.getElementById("brief-tts-status").textContent = "⏸ 일시정지";
+    } else {
+      window.speechSynthesis.resume(); briefPaused = false;
+      this.textContent = "⏸ 일시정지";
+      document.getElementById("brief-tts-status").textContent = "🔊 읽는 중...";
+    }
+  };
+
+  document.getElementById("brief-tts-stop").onclick = function() {
+    window.speechSynthesis.cancel(); briefPaused = false;
+    document.getElementById("brief-tts-pause").textContent = "⏸ 일시정지";
+    document.getElementById("brief-tts-pause").disabled = true;
+    document.getElementById("brief-tts-stop").disabled = true;
+    document.getElementById("brief-tts-status").textContent = "⏹ 정지됨";
+  };
 
   // ===== TTS (음성 읽기) JS =====
   var ttsUtterance = null;
