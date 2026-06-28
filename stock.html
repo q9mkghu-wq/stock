@@ -3258,6 +3258,36 @@
   }
 
   // ===== 패널 순서 변경 JS =====
+  function updatePanelBtns() {
+    var container = document.getElementById("panels-container");
+    var panels = container.querySelectorAll(".slide-panel");
+    panels.forEach(function (panel, idx) {
+      var leftBtn = panel.querySelector(".panel-lr-btn[data-dir='-1']");
+      var rightBtn = panel.querySelector(".panel-lr-btn[data-dir='1']");
+      if (leftBtn) leftBtn.disabled = idx === 0;
+      if (rightBtn) rightBtn.disabled = idx === panels.length - 1;
+    });
+  }
+
+  document.getElementById("panels-container").addEventListener("click", function (e) {
+    var btn = e.target.closest(".panel-lr-btn");
+    if (!btn) return;
+    var id = btn.dataset.id;
+    var dir = parseInt(btn.dataset.dir);
+    var container = document.getElementById("panels-container");
+    var panels = Array.from(container.querySelectorAll(".slide-panel"));
+    var idx = panels.findIndex(function (p) { return p.id === "slide-" + id; });
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= panels.length) return;
+    if (dir === 1) {
+      container.insertBefore(panels[idx], panels[newIdx].nextSibling);
+    } else {
+      container.insertBefore(panels[idx], panels[newIdx]);
+    }
+    updatePanelBtns();
+    savePanelOrder();
+  });
+
   var panelOrderRef = db.ref("panelOrder");
 
   function savePanelOrder() {
