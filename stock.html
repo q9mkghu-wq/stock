@@ -404,6 +404,7 @@
   .eco-calendar-item { background:var(--card-bg);border-left:4px solid var(--border);border-radius:0 8px 8px 0;padding:8px 12px;font-size:13px; }
   .eco-calendar-item.high { border-left-color:#E63946; }
   .eco-calendar-item.medium { border-left-color:#F4A261; }
+  .panel-collapse-btn:hover { border-color: var(--accent); color: var(--accent); }
   .eco-up { color:#E63946; }
   .eco-down { color:#457B9D; }
 
@@ -796,11 +797,7 @@
 
   <div class="panels-container" id="panels-container">
 
-    <!-- 탭 버튼 -->
-    <div id="panel-tabs" style="display:flex;gap:8px;padding:10px 14px 0;background:var(--bg);border-bottom:2px solid var(--border);margin-bottom:0;flex-shrink:0;width:100%;box-sizing:border-box;position:sticky;top:0;z-index:10;">
-      <button class="panel-tab-btn active" data-tab="main" style="padding:8px 18px;border-radius:10px 10px 0 0;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">📱 메인</button>
-      <button class="panel-tab-btn" data-tab="sub" style="padding:8px 18px;border-radius:10px 10px 0 0;border:none;background:var(--card-bg);color:var(--text-sub);font-size:14px;font-weight:700;cursor:pointer;border:1px solid var(--border);">📊 서브</button>
-    </div>
+
 
       <!-- 링크 보관함 -->
       <div class="slide-panel" id="slide-linkbox">
@@ -986,7 +983,7 @@
 
       <!-- 경제 뉴스 -->
       <!-- AI 바로가기 패널 -->
-      <div class="slide-panel" id="slide-ai-links" data-tab="sub">
+      <div class="slide-panel" id="slide-ai-links">
         <div class="panel-title-row">
           <span>🚀 AI 바로가기</span>
           <div class="panel-title-actions">
@@ -1077,7 +1074,7 @@
       </div>
 
       <!-- 경제 뉴스 -->
-      <div class="slide-panel" id="slide-news" data-tab="sub">
+      <div class="slide-panel" id="slide-news">
         <div class="panel-title-row" id="title-news">
           <span>📰 경제 뉴스</span>
           <div class="panel-title-actions">
@@ -1099,7 +1096,7 @@
       </div>
 
       <!-- 키워드 뉴스 패널 -->
-      <div class="slide-panel" id="slide-keyword-news" data-tab="sub" style="border-left:2px solid var(--border);">
+      <div class="slide-panel" id="slide-keyword-news" style="border-left:2px solid var(--border);">
         <div class="panel-title-row">
           <span>🔍 키워드 뉴스</span>
           <div class="panel-title-actions">
@@ -1153,7 +1150,7 @@
       </div>
 
       <!-- 글로벌 이코노미 나침반 패널 -->
-      <div class="slide-panel" id="slide-economy" data-tab="sub">
+      <div class="slide-panel" id="slide-economy">
         <div class="panel-title-row">
           <span>🗺️ 글로벌 이코노미 나침반</span>
           <div class="panel-title-actions">
@@ -3332,33 +3329,68 @@
     };
   }
 
-  // ===== 패널 탭 전환 JS =====
-  function switchPanelTab(tab) {
-    // 탭 버튼 스타일
-    document.querySelectorAll(".panel-tab-btn").forEach(function(btn) {
-      var isActive = btn.dataset.tab === tab;
-      btn.style.background = isActive ? "var(--accent)" : "var(--card-bg)";
-      btn.style.color = isActive ? "#fff" : "var(--text-sub)";
-      btn.style.border = isActive ? "none" : "1px solid var(--border)";
-      if (isActive) btn.classList.add("active");
-      else btn.classList.remove("active");
-    });
-    // 패널 표시/숨김
-    document.querySelectorAll(".slide-panel").forEach(function(panel) {
-      var panelTab = panel.dataset.tab || "main";
-      panel.style.display = (panelTab === tab) ? "flex" : "none";
-    });
+  // ===== 패널 접기/펼치기 JS =====
+  var collapsiblePanels = ["slide-ai-links", "slide-news", "slide-keyword-news", "slide-economy"];
+  var panelCollapsed = {};
+
+  // localStorage에서 접힌 상태 복원
+  try {
+    var saved = localStorage.getItem("panelCollapsed");
+    if (saved) panelCollapsed = JSON.parse(saved);
+    else {
+      // 기본값: 서브 패널은 접힘
+      collapsiblePanels.forEach(function(id) { panelCollapsed[id] = true; });
+    }
+  } catch(e) {
+    collapsiblePanels.forEach(function(id) { panelCollapsed[id] = true; });
   }
 
-  // 탭 버튼 클릭 이벤트
-  document.getElementById("panel-tabs").addEventListener("click", function(e) {
-    var btn = e.target.closest(".panel-tab-btn");
-    if (!btn) return;
-    switchPanelTab(btn.dataset.tab);
-  });
+  function savePanelCollapsed() {
+    try { localStorage.setItem("panelCollapsed", JSON.stringify(panelCollapsed)); } catch(e) {}
+  }
 
-  // 초기 탭: 메인
-  switchPanelTab("main");
+  function applyPanelCollapse(id) {
+    var panel = document.getElementById(id);
+    if (!panel) return;
+    var isCollapsed = panelCollapsed[id];
+    var content = panel.querySelector(".panel-collapsible-content");
+    var btn = panel.querySelector(".panel-collapse-btn");
+    if (content) content.style.display = isCollapsed ? "none" : "block";
+    if (btn) btn.textContent = isCollapsed ? "▶ 펼치기" : "▼ 접기";
+    panel.style.minWidth = isCollapsed ? "auto" : "";
+    panel.style.width = isCollapsed ? "auto" : "";
+    panel.style.flex = isCollapsed ? "0 0 auto" : "";
+  }
+
+  function togglePanelCollapse(id) {
+    panelCollapsed[id] = !panelCollapsed[id];
+    savePanelCollapsed();
+    applyPanelCollapse(id);
+  }
+
+  // 서브 패널들에 접기 버튼과 content wrapper 추가
+  collapsiblePanels.forEach(function(id) {
+    var panel = document.getElementById(id);
+    if (!panel) return;
+    var titleRow = panel.querySelector(".panel-title-row");
+    if (!titleRow) return;
+
+    // 접기 버튼 추가
+    var colBtn = document.createElement("button");
+    colBtn.className = "panel-collapse-btn";
+    colBtn.style.cssText = "padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);font-size:12px;cursor:pointer;color:var(--text-sub);margin-left:6px;";
+    colBtn.onclick = function(e) { e.stopPropagation(); togglePanelCollapse(id); };
+    titleRow.appendChild(colBtn);
+
+    // 제목 행 아래 모든 내용을 content div로 감싸기
+    var content = document.createElement("div");
+    content.className = "panel-collapsible-content";
+    var children = Array.from(panel.children).filter(function(c) { return c !== titleRow; });
+    children.forEach(function(c) { content.appendChild(c); });
+    panel.appendChild(content);
+
+    applyPanelCollapse(id);
+  });
 
   // ===== 패널 순서 변경 JS =====
   var panelOrderRef = db.ref("panelOrder");
