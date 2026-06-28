@@ -1125,7 +1125,23 @@
             <button class="move-btn panel-lr-btn" data-id="sectors" data-dir="1">→</button>
           </div>
         </div>
-        <p style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">종목 클릭 시 네이버 증권으로 이동합니다.</p>
+
+        <!-- 종목 추가 폼 -->
+        <div id="sector-add-form" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;display:none;flex-direction:column;gap:8px;">
+          <div style="font-size:14px;font-weight:700;">+ 종목 추가</div>
+          <select id="sector-add-theme" style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;"></select>
+          <input type="text" id="sector-add-name" placeholder="종목명 (예: 삼성전자)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+          <input type="text" id="sector-add-code" placeholder="종목코드 6자리 (예: 005930)" maxlength="6" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+          <div style="display:flex;gap:8px;">
+            <button id="sector-add-submit" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">추가</button>
+            <button id="sector-add-cancel" style="padding:10px 14px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;">취소</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button id="sector-add-toggle" style="flex:1;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;">+ 종목 추가</button>
+          <button id="sector-refresh-btn" style="padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;" title="주가 새로고침">↻ 새로고침</button>
+        </div>
 
         <div id="sector-list"></div>
       </div>
@@ -3017,53 +3033,163 @@
     }
   ];
 
+  // ===== 테마별 관련주 JS =====
+  var sectorPrices = {}; // code → {price, change, changeRate}
+
+  function fetchSectorPrice(code, callback) {
+    var url = "https://api.allorigins.win/get?url=" + encodeURIComponent(
+      "https://query1.finance.yahoo.com/v8/finance/chart/" + code + ".KS?interval=1d&range=2d"
+    );
+    fetch(url)
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        var data = JSON.parse(res.contents);
+        var meta = data.chart.result[0].meta;
+        var price = meta.regularMarketPrice;
+        var prev = meta.chartPreviousClose || meta.previousClose || price;
+        var change = price - prev;
+        var changeRate = prev ? (change / prev * 100) : 0;
+        sectorPrices[code] = { price: price, change: change, changeRate: changeRate };
+        if (callback) callback(code);
+      })
+      .catch(function(){
+        sectorPrices[code] = null;
+        if (callback) callback(code);
+      });
+  }
+
+  function updateSectorPriceEl(code) {
+    var priceEl = document.getElementById("sp-" + code);
+    var chgEl = document.getElementById("sc-" + code);
+    if (!priceEl || !chgEl) return;
+    var d = sectorPrices[code];
+    if (!d) { priceEl.textContent = "-"; chgEl.textContent = ""; return; }
+    priceEl.textContent = d.price.toLocaleString() + "원";
+    var isUp = d.changeRate >= 0;
+    chgEl.textContent = (isUp ? "▲" : "▼") + Math.abs(d.changeRate).toFixed(2) + "%";
+    chgEl.style.color = isUp ? "#E63946" : "#457B9D";
+  }
+
   function renderSectors() {
     var container = document.getElementById("sector-list");
     if (!container) return;
     container.innerHTML = "";
 
-    sectorData.forEach(function(sector) {
-      var section = document.createElement("div");
-      section.style.cssText = "margin-bottom:24px;";
+    // 테마 선택 select 채우기
+    var sel = document.getElementById("sector-add-theme");
+    if (sel) {
+      sel.innerHTML = "";
+      sectorData.forEach(function(sector, idx) {
+        var opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = sector.name;
+        sel.appendChild(opt);
+      });
+    }
 
-      var title = document.createElement("div");
-      title.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";margin-bottom:10px;padding-bottom:4px;border-bottom:2px solid var(--border);";
-      title.textContent = sector.name;
-      section.appendChild(title);
+    sectorData.forEach(function(sector, sectorIdx) {
+      var section = document.createElement("div");
+      section.style.cssText = "margin-bottom:20px;";
+
+      // 테마 제목
+      var titleRow = document.createElement("div");
+      titleRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--border);";
+      var titleEl = document.createElement("div");
+      titleEl.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";";
+      titleEl.textContent = sector.name;
+      titleRow.appendChild(titleEl);
+      section.appendChild(titleRow);
 
       var grid = document.createElement("div");
-      grid.style.cssText = "display:flex;flex-direction:column;gap:8px;";
+      grid.style.cssText = "display:flex;flex-direction:column;gap:6px;";
 
-      sector.stocks.forEach(function(stock) {
-        // 카드 (버튼 + 차트)
-        var card = document.createElement("a");
-        card.href = "https://finance.naver.com/item/main.naver?code=" + stock.code;
-        card.target = "_blank";
-        card.style.cssText = "display:flex;align-items:center;gap:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:8px 10px;text-decoration:none;overflow:hidden;";
+      sector.stocks.forEach(function(stock, stockIdx) {
+        var card = document.createElement("div");
+        card.style.cssText = "display:flex;align-items:center;gap:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:8px 10px;";
 
-        // 왼쪽: 종목명
-        var nameEl = document.createElement("div");
-        nameEl.style.cssText = "font-size:13px;font-weight:800;color:" + sector.color + ";min-width:90px;flex-shrink:0;";
+        // 종목명 (클릭 → 네이버)
+        var nameEl = document.createElement("a");
+        nameEl.href = "https://finance.naver.com/item/main.naver?code=" + stock.code;
+        nameEl.target = "_blank";
+        nameEl.style.cssText = "font-size:13px;font-weight:800;color:" + sector.color + ";min-width:85px;flex-shrink:0;text-decoration:none;";
         nameEl.textContent = stock.name;
 
-        // 오른쪽: 미니 차트 이미지 (네이버 증권)
+        // 미니 차트
         var chartImg = document.createElement("img");
         chartImg.src = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/" + stock.code + ".png";
-        chartImg.style.cssText = "height:40px;flex:1;min-width:0;object-fit:fill;border-radius:4px;";
-        chartImg.alt = stock.name + " 차트";
-        chartImg.onerror = function() {
-          this.style.display = "none";
+        chartImg.style.cssText = "height:36px;flex:1;min-width:0;object-fit:fill;border-radius:4px;";
+        chartImg.onerror = function() { this.style.display="none"; };
+
+        // 실시간 주가
+        var priceWrap = document.createElement("div");
+        priceWrap.style.cssText = "text-align:right;flex-shrink:0;min-width:70px;";
+        var priceEl = document.createElement("div");
+        priceEl.id = "sp-" + stock.code;
+        priceEl.style.cssText = "font-size:12px;font-weight:800;color:var(--text-main);";
+        priceEl.textContent = "로딩중";
+        var chgEl = document.createElement("div");
+        chgEl.id = "sc-" + stock.code;
+        chgEl.style.cssText = "font-size:11px;font-weight:700;";
+        priceWrap.appendChild(priceEl);
+        priceWrap.appendChild(chgEl);
+
+        // 삭제 버튼
+        var delBtn = document.createElement("button");
+        delBtn.textContent = "✕";
+        delBtn.style.cssText = "background:none;border:none;color:#ccc;font-size:13px;cursor:pointer;flex-shrink:0;padding:2px;";
+        delBtn.title = "종목 삭제";
+        delBtn.onclick = function() {
+          if (!confirm(stock.name + "을(를) 삭제하시겠습니까?")) return;
+          sector.stocks.splice(stockIdx, 1);
+          renderSectors();
         };
 
         card.appendChild(nameEl);
         card.appendChild(chartImg);
+        card.appendChild(priceWrap);
+        card.appendChild(delBtn);
         grid.appendChild(card);
+
+        // 주가 로드 (캐시 있으면 바로, 없으면 fetch)
+        if (sectorPrices[stock.code] !== undefined) {
+          updateSectorPriceEl(stock.code);
+        } else {
+          fetchSectorPrice(stock.code, updateSectorPriceEl);
+        }
       });
 
       section.appendChild(grid);
       container.appendChild(section);
     });
   }
+
+  // 종목 추가 버튼
+  document.getElementById("sector-add-toggle").onclick = function() {
+    var form = document.getElementById("sector-add-form");
+    form.style.display = form.style.display === "none" ? "flex" : "none";
+  };
+  document.getElementById("sector-add-cancel").onclick = function() {
+    document.getElementById("sector-add-form").style.display = "none";
+  };
+  document.getElementById("sector-add-submit").onclick = function() {
+    var themeIdx = parseInt(document.getElementById("sector-add-theme").value);
+    var name = document.getElementById("sector-add-name").value.trim();
+    var code = document.getElementById("sector-add-code").value.trim();
+    if (!name || !/^\d{6}$/.test(code)) {
+      alert("종목명과 6자리 종목코드를 입력해주세요."); return;
+    }
+    sectorData[themeIdx].stocks.push({ name: name, code: code });
+    document.getElementById("sector-add-name").value = "";
+    document.getElementById("sector-add-code").value = "";
+    document.getElementById("sector-add-form").style.display = "none";
+    renderSectors();
+  };
+
+  // 새로고침 버튼
+  document.getElementById("sector-refresh-btn").onclick = function() {
+    sectorPrices = {};
+    renderSectors();
+  };
 
   renderSectors();
 
