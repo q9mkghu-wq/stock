@@ -796,6 +796,12 @@
 
   <div class="panels-container" id="panels-container">
 
+    <!-- 탭 버튼 -->
+    <div id="panel-tabs" style="display:flex;gap:8px;padding:10px 14px 0;background:var(--bg);border-bottom:2px solid var(--border);margin-bottom:0;flex-shrink:0;width:100%;box-sizing:border-box;position:sticky;top:0;z-index:10;">
+      <button class="panel-tab-btn active" data-tab="main" style="padding:8px 18px;border-radius:10px 10px 0 0;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">📱 메인</button>
+      <button class="panel-tab-btn" data-tab="sub" style="padding:8px 18px;border-radius:10px 10px 0 0;border:none;background:var(--card-bg);color:var(--text-sub);font-size:14px;font-weight:700;cursor:pointer;border:1px solid var(--border);">📊 서브</button>
+    </div>
+
       <!-- 링크 보관함 -->
       <div class="slide-panel" id="slide-linkbox">
         <div class="panel-title-row" id="title-linkbox">
@@ -980,7 +986,7 @@
 
       <!-- 경제 뉴스 -->
       <!-- AI 바로가기 패널 -->
-      <div class="slide-panel" id="slide-ai-links">
+      <div class="slide-panel" id="slide-ai-links" data-tab="sub">
         <div class="panel-title-row">
           <span>🚀 AI 바로가기</span>
           <div class="panel-title-actions">
@@ -1071,7 +1077,7 @@
       </div>
 
       <!-- 경제 뉴스 -->
-      <div class="slide-panel" id="slide-news">
+      <div class="slide-panel" id="slide-news" data-tab="sub">
         <div class="panel-title-row" id="title-news">
           <span>📰 경제 뉴스</span>
           <div class="panel-title-actions">
@@ -1093,7 +1099,7 @@
       </div>
 
       <!-- 키워드 뉴스 패널 -->
-      <div class="slide-panel" id="slide-keyword-news" style="border-left:2px solid var(--border);">
+      <div class="slide-panel" id="slide-keyword-news" data-tab="sub" style="border-left:2px solid var(--border);">
         <div class="panel-title-row">
           <span>🔍 키워드 뉴스</span>
           <div class="panel-title-actions">
@@ -1147,7 +1153,7 @@
       </div>
 
       <!-- 글로벌 이코노미 나침반 패널 -->
-      <div class="slide-panel" id="slide-economy">
+      <div class="slide-panel" id="slide-economy" data-tab="sub">
         <div class="panel-title-row">
           <span>🗺️ 글로벌 이코노미 나침반</span>
           <div class="panel-title-actions">
@@ -3325,6 +3331,34 @@
       window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
     };
   }
+
+  // ===== 패널 탭 전환 JS =====
+  function switchPanelTab(tab) {
+    // 탭 버튼 스타일
+    document.querySelectorAll(".panel-tab-btn").forEach(function(btn) {
+      var isActive = btn.dataset.tab === tab;
+      btn.style.background = isActive ? "var(--accent)" : "var(--card-bg)";
+      btn.style.color = isActive ? "#fff" : "var(--text-sub)";
+      btn.style.border = isActive ? "none" : "1px solid var(--border)";
+      if (isActive) btn.classList.add("active");
+      else btn.classList.remove("active");
+    });
+    // 패널 표시/숨김
+    document.querySelectorAll(".slide-panel").forEach(function(panel) {
+      var panelTab = panel.dataset.tab || "main";
+      panel.style.display = (panelTab === tab) ? "flex" : "none";
+    });
+  }
+
+  // 탭 버튼 클릭 이벤트
+  document.getElementById("panel-tabs").addEventListener("click", function(e) {
+    var btn = e.target.closest(".panel-tab-btn");
+    if (!btn) return;
+    switchPanelTab(btn.dataset.tab);
+  });
+
+  // 초기 탭: 메인
+  switchPanelTab("main");
 
   // ===== 패널 순서 변경 JS =====
   var panelOrderRef = db.ref("panelOrder");
