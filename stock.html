@@ -1056,9 +1056,9 @@
         <div style="border-top:2px solid var(--border);padding-top:12px;margin-bottom:12px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
             <div style="font-size:17px;font-weight:800;">📰 경제 뉴스</div>
-            <button id="toggle-news" onclick="(function(){var c=document.getElementById('sub-news-content');var b=document.getElementById('toggle-news');var open=c.style.display!=='none';c.style.display=open?'none':'block';b.textContent=open?'▶ 펼치기':'▼ 접기';})()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);font-size:12px;cursor:pointer;">▼ 접기</button>
+            <button id="toggle-news" onclick="(function(){var c=document.getElementById('sub-news-content');var b=document.getElementById('toggle-news');var open=c.style.display!=='none';c.style.display=open?'none':'block';b.textContent=open?'▶ 펼치기':'▼ 접기';})()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);font-size:12px;cursor:pointer;">▶ 펼치기</button>
           </div>
-          <div id="sub-news-content">
+          <div id="sub-news-content" style="display:none;">
             <div class="news-source-tabs" id="news-source-tabs">
               <button class="news-source-btn active" data-source="all">전체</button>
               <button class="news-source-btn" data-source="economy">경제 종합</button>
@@ -3281,8 +3281,12 @@
   // Firebase에서 저장된 순서 불러오기
   panelOrderRef.once("value", function (snap) {
     var val = snap.val();
-    if (val && Array.isArray(val) && val.length === 5) {
-      applyPanelOrder(val);
+    if (val && Array.isArray(val) && val.length > 0) {
+      // 현재 존재하는 패널만 필터링해서 적용
+      var existingIds = ["linkbox","ai","memo","ai-links","news","keyword-news","economy","sectors"];
+      var filtered = val.filter(function(id) { return existingIds.indexOf(id) !== -1; });
+      if (filtered.length > 0) applyPanelOrder(filtered);
+      else updatePanelBtns();
     } else {
       updatePanelBtns();
     }
