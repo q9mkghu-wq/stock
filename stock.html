@@ -3264,61 +3264,47 @@
     var container = document.getElementById("panels-container");
     var panels = Array.from(container.querySelectorAll(".slide-panel"));
     var order = panels.map(function (p) { return p.id.replace("slide-", ""); });
+    // Firebase + localStorage 둘 다 저장 (Firebase: 기기 동기화, localStorage: 빠른 복원)
     panelOrderRef.set(order);
+    try { localStorage.setItem("panelOrder2", JSON.stringify(order)); } catch(e) {}
   }
 
   function applyPanelOrder(order) {
     var container = document.getElementById("panels-container");
+    var existingIds = ["linkbox","ai","memo","ai-links","sectors"];
     order.forEach(function (key) {
+      if (existingIds.indexOf(key) === -1) return;
       var panel = document.getElementById("slide-" + key);
       if (panel) container.appendChild(panel);
     });
     updatePanelBtns();
   }
 
-  function updatePanelBtns() {
-    var container = document.getElementById("panels-container");
-    var panels = container.querySelectorAll(".slide-panel");
-    panels.forEach(function (panel, idx) {
-      var leftBtn = panel.querySelector(".panel-lr-btn[data-dir='-1']");
-      var rightBtn = panel.querySelector(".panel-lr-btn[data-dir='1']");
-      if (leftBtn) leftBtn.disabled = idx === 0;
-      if (rightBtn) rightBtn.disabled = idx === panels.length - 1;
-    });
-  }
-
-  document.getElementById("panels-container").addEventListener("click", function (e) {
-    var btn = e.target.closest(".panel-lr-btn");
-    if (!btn) return;
-    var id = btn.dataset.id;
-    var dir = parseInt(btn.dataset.dir);
-    var container = document.getElementById("panels-container");
-    var panels = Array.from(container.querySelectorAll(".slide-panel"));
-    var idx = panels.findIndex(function (p) { return p.id === "slide-" + id; });
-    var newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= panels.length) return;
-
-    if (dir === 1) {
-      container.insertBefore(panels[newIdx + 1] || null, panels[idx]);
-      container.insertBefore(panels[idx], panels[newIdx]);
-    } else {
-      container.insertBefore(panels[idx], panels[newIdx]);
-    }
+  // 1. localStorage로 즉시 복원 (빠름)
+  (function() {
+    try {
+      var savedOrder = localStorage.getItem("panelOrder2");
+      if (savedOrder) {
+        var orderArr = JSON.parse(savedOrder);
+        if (Array.isArray(orderArr) && orderArr.length > 0) {
+          applyPanelOrder(orderArr);
+          return;
+        }
+      }
+    } catch(e) {}
     updatePanelBtns();
-    savePanelOrder();
-  });
+  })();
 
-  // Firebase에서 저장된 순서 불러오기
-  panelOrderRef.once("value", function (snap) {
+  // 2. Firebase에서 최신 순서 가져와서 localStorage 업데이트 (기기 동기화)
+  panelOrderRef.once("value", function(snap) {
     var val = snap.val();
     if (val && Array.isArray(val) && val.length > 0) {
-      // 현재 존재하는 패널만 필터링해서 적용
-      var existingIds = ["linkbox","ai","memo","ai-links","news","keyword-news","economy","sectors"];
+      var existingIds = ["linkbox","ai","memo","ai-links","sectors"];
       var filtered = val.filter(function(id) { return existingIds.indexOf(id) !== -1; });
-      if (filtered.length > 0) applyPanelOrder(filtered);
-      else updatePanelBtns();
-    } else {
-      updatePanelBtns();
+      if (filtered.length > 0) {
+        try { localStorage.setItem("panelOrder2", JSON.stringify(filtered)); } catch(e) {}
+        applyPanelOrder(filtered);
+      }
     }
   });
 
