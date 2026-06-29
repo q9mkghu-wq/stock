@@ -1357,14 +1357,26 @@
   var db = firebase.database();
   var dbRef = db.ref("stockHub");
   var watchlistRef = db.ref("watchlist");
+  var watchlistCashRef = db.ref("watchlistCash");
 
   var data = JSON.parse(JSON.stringify(DEFAULT_DATA));
   var isFirstLoad = true;
   var lastPrices = {};
-  var watchlist = []; // 실시간 시세 전용 종목 리스트
+  var watchlist = [];
+  var watchlistCash = 0;
 
   function saveData(d) { dbRef.set(d); }
   function saveWatchlist() { watchlistRef.set(watchlist); }
+
+  // 현금 보유량 Firebase 로드
+  watchlistCashRef.on("value", function(snap) {
+    watchlistCash = snap.val() || 0;
+    var cashDisp = document.getElementById("cash-display");
+    if (cashDisp) cashDisp.textContent = watchlistCash.toLocaleString() + "원";
+    var cashInp = document.getElementById("cash-input");
+    if (cashInp && document.activeElement !== cashInp) cashInp.value = watchlistCash;
+    updateGrandTotal();
+  });
 
   // watchlist Firebase 동기화
   var watchlistLoaded = false;
@@ -1473,30 +1485,95 @@
     refreshBtn.onclick = function () { fetchAllPrices(stocks, refreshBtn); };
     outer.appendChild(refreshBtn);
 
+    // 현금 보유량 입력
+    var cashBox = document.createElement("div");
+    cashBox.style.cssText = "display:flex;align-items:center;gap:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:8px;";
+    var cashLabel = document.createElement("div");
+    cashLabel.textContent = "💵 현금 보유량";
+    cashLabel.style.cssText = "font-size:14px;font-weight:700;color:var(--text-main);flex-shrink:0;";
+    var cashInput = document.createElement("input");
+    cashInput.type = "number";
+    cashInput.id = "cash-input";
+    cashInput.placeholder = "0";
+    cashInput.min = "0";
+    cashInput.style.cssText = "flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;text-align:right;";
+    cashInput.value = watchlistCash || 0;
+    var cashWon = document.createElement("span");
+    cashWon.textContent = "원";
+    cashWon.style.cssText = "font-size:13px;color:var(--text-sub);flex-shrink:0;";
+    var cashSaveBtn = document.createElement("button");
+    cashSaveBtn.textContent = "저장";
+    cashSaveBtn.style.cssText = "padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;";
+    cashSaveBtn.onclick = function() {
+      var val = parseInt(cashInput.value) || 0;
+      watchlistCash = val;
+      db.ref("watchlistCash").set(val);
+      updateGrandTotal();
+      cashSaveBtn.textContent = "✓";
+      setTimeout(function() { cashSaveBtn.textContent = "저장"; }, 1000);
+    };
+    cashInput.addEventListener("keydown", function(e) { if (e.key === "Enter") cashSaveBtn.click(); });
+    cashBox.appendChild(cashLabel);
+    cashBox.appendChild(cashInput);
+    cashBox.appendChild(cashWon);
+    cashBox.appendChild(cashSaveBtn);
+    outer.appendChild(cashBox);
+
+    // 보유 종목 합계
     var grandTotalBox = document.createElement("div");
-    grandTotalBox.style.display = "flex";
-    grandTotalBox.style.justifyContent = "space-between";
-    grandTotalBox.style.alignItems = "center";
-    grandTotalBox.style.background = "var(--accent)";
-    grandTotalBox.style.borderRadius = "12px";
-    grandTotalBox.style.padding = "14px 16px";
-    grandTotalBox.style.marginBottom = "10px";
+    grandTotalBox.style.cssText = "background:var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:4px;";
 
+    var stockRow = document.createElement("div");
+    stockRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;";
     var grandTotalLabel = document.createElement("div");
-    grandTotalLabel.textContent = "보유 종목 합계";
-    grandTotalLabel.style.fontSize = "14px";
-    grandTotalLabel.style.fontWeight = "700";
-    grandTotalLabel.style.color = "#fff";
-
+    grandTotalLabel.textContent = "📈 보유 종목 합계";
+    grandTotalLabel.style.cssText = "font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);";
     var grandTotalValue = document.createElement("div");
     grandTotalValue.id = "grand-total";
     grandTotalValue.textContent = "— (시세 불러오기 필요)";
-    grandTotalValue.style.fontSize = "17px";
-    grandTotalValue.style.fontWeight = "800";
-    grandTotalValue.style.color = "#fff";
+    grandTotalValue.style.cssText = "font-size:16px;font-weight:800;color:#fff;";
+    stockRow.appendChild(grandTotalLabel);
+    stockRow.appendChild(grandTotalValue);
+    grandTotalBox.appendChild(stockRow);
 
-    grandTotalBox.appendChild(grandTotalLabel);
-    grandTotalBox.appendChild(grandTotalValue);
+    // 구분선
+    var divLine = document.createElement("div");
+    divLine.style.cssText = "border-top:1px solid rgba(255,255,255,0.3);margin-bottom:6px;";
+    grandTotalBox.appendChild(divLine);
+
+    // 현금 행
+    var cashRow = document.createElement("div");
+    cashRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;";
+    var cashRowLabel = document.createElement("div");
+    cashRowLabel.textContent = "💵 현금 보유량";
+    cashRowLabel.style.cssText = "font-size:13px;font-weight:700;color:rgba(255,255,255,0.85);";
+    var cashRowValue = document.createElement("div");
+    cashRowValue.id = "cash-display";
+    cashRowValue.style.cssText = "font-size:16px;font-weight:800;color:#fff;";
+    cashRowValue.textContent = (watchlistCash || 0).toLocaleString() + "원";
+    cashRow.appendChild(cashRowLabel);
+    cashRow.appendChild(cashRowValue);
+    grandTotalBox.appendChild(cashRow);
+
+    // 구분선2
+    var divLine2 = document.createElement("div");
+    divLine2.style.cssText = "border-top:1px solid rgba(255,255,255,0.3);margin-bottom:6px;";
+    grandTotalBox.appendChild(divLine2);
+
+    // 총자산 행
+    var totalAssetRow = document.createElement("div");
+    totalAssetRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+    var totalAssetLabel = document.createElement("div");
+    totalAssetLabel.textContent = "💰 총 자산";
+    totalAssetLabel.style.cssText = "font-size:15px;font-weight:800;color:#fff;";
+    var totalAssetValue = document.createElement("div");
+    totalAssetValue.id = "total-asset";
+    totalAssetValue.textContent = "—";
+    totalAssetValue.style.cssText = "font-size:20px;font-weight:800;color:#fff;";
+    totalAssetRow.appendChild(totalAssetLabel);
+    totalAssetRow.appendChild(totalAssetValue);
+    grandTotalBox.appendChild(totalAssetRow);
+
     outer.appendChild(grandTotalBox);
 
     var wrap = document.createElement("div");
@@ -1807,12 +1884,30 @@
       }
     });
 
+    // 종목 합계
     if (!hasQty) {
       grandTotalValue.textContent = "보유 수량을 입력해주세요";
     } else if (!allPricesReady) {
       grandTotalValue.textContent = "— (시세 불러오기 필요)";
     } else {
       grandTotalValue.textContent = sum.toLocaleString() + "원";
+    }
+
+    // 현금 표시
+    var cashDisp = document.getElementById("cash-display");
+    if (cashDisp) cashDisp.textContent = watchlistCash.toLocaleString() + "원";
+
+    // 총자산 = 종목합계 + 현금
+    var totalAssetEl = document.getElementById("total-asset");
+    if (totalAssetEl) {
+      if (!hasQty || !allPricesReady) {
+        totalAssetEl.textContent = watchlistCash > 0
+          ? "현금 " + watchlistCash.toLocaleString() + "원"
+          : "—";
+      } else {
+        var total = sum + watchlistCash;
+        totalAssetEl.textContent = total.toLocaleString() + "원";
+      }
     }
   }
 
