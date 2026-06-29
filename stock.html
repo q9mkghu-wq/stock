@@ -3210,15 +3210,52 @@
   ];
 
   // ===== 섹터 주가 및 렌더링 =====
-  var sectorPrices = {}; // code → {price, change, changeRate}
+  var sectorPrices = {};
+  var sectorFetchQueue = [];
+  var sectorFetching = false;
+
+  // 여러 프록시 순서대로 시도
+  var sectorProxies = [
+    function(code) {
+      return "https://api.allorigins.win/get?url=" + encodeURIComponent(
+        "https://query1.finance.yahoo.com/v8/finance/chart/" + code + ".KS?interval=1d&range=2d"
+      );
+    },
+    function(code) {
+      return "https://corsproxy.io/?" + encodeURIComponent(
+        "https://query2.finance.yahoo.com/v8/finance/chart/" + code + ".KS?interval=1d&range=2d"
+      );
+    },
+    function(code) {
+      return "https://api.allorigins.win/get?url=" + encodeURIComponent(
+        "https://finance.naver.com/item/sise_day.nhn?code=" + code
+      );
+    }
+  ];
 
   function fetchSectorPrice(code, callback) {
+    // 이미 성공한 데이터 있으면 바로 반환
+    if (sectorPrices[code] && sectorPrices[code] !== "loading") {
+      if (callback) callback(code);
+      return;
+    }
+
+    sectorPrices[code] = "loading";
+    var priceEl = document.getElementById("sp-" + code);
+    if (priceEl) priceEl.textContent = "...";
+
+    // Yahoo Finance로 시도
     var url = "https://api.allorigins.win/get?url=" + encodeURIComponent(
       "https://query1.finance.yahoo.com/v8/finance/chart/" + code + ".KS?interval=1d&range=2d"
     );
-    fetch(url)
-      .then(function(r){ return r.json(); })
-      .then(function(res){
+
+    var timeout = new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error("timeout")); }, 5000);
+    });
+
+    Promise.race([fetch(url), timeout])
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
         var data = JSON.parse(res.contents);
         var meta = data.chart.result[0].meta;
         var price = meta.regularMarketPrice;
@@ -3228,9 +3265,33 @@
         sectorPrices[code] = { price: price, change: change, changeRate: changeRate };
         if (callback) callback(code);
       })
-      .catch(function(){
-        sectorPrices[code] = null;
-        if (callback) callback(code);
+      .catch(function() {
+        // 실패 시 두 번째 프록시 시도
+        var url2 = "https://corsproxy.io/?" + encodeURIComponent(
+          "https://query1.finance.yahoo.com/v8/finance/chart/" + code + ".KS?interval=1d&range=2d"
+        );
+        var timeout2 = new Promise(function(_, reject) {
+          setTimeout(function() { reject(new Error("timeout")); }, 5000);
+        });
+        Promise.race([fetch(url2), timeout2])
+          .then(function(r) { return r.json(); })
+          .then(function(res2) {
+            var data2;
+            try { data2 = JSON.parse(res2.contents || JSON.stringify(res2)); } catch(e) { data2 = res2; }
+            var meta = (data2.chart || data2).result ? (data2.chart || data2).result[0].meta : null;
+            if (!meta) throw new Error("no data");
+            var price = meta.regularMarketPrice;
+            var prev = meta.chartPreviousClose || meta.previousClose || price;
+            var change = price - prev;
+            var changeRate = prev ? (change / prev * 100) : 0;
+            sectorPrices[code] = { price: price, change: change, changeRate: changeRate };
+            if (callback) callback(code);
+          })
+          .catch(function() {
+            // 두 번 다 실패 시 네이버 링크 표시
+            sectorPrices[code] = { error: true };
+            if (callback) callback(code);
+          });
       });
   }
 
@@ -3239,7 +3300,12 @@
     var chgEl = document.getElementById("sc-" + code);
     if (!priceEl || !chgEl) return;
     var d = sectorPrices[code];
-    if (!d) { priceEl.textContent = "-"; chgEl.textContent = ""; return; }
+    if (!d || d === "loading") { priceEl.textContent = "..."; chgEl.textContent = ""; return; }
+    if (d.error) {
+      priceEl.innerHTML = '<a href="https://finance.naver.com/item/main.naver?code=' + code + '" target="_blank" style="color:var(--accent);font-size:11px;text-decoration:none;">네이버↗</a>';
+      chgEl.textContent = "";
+      return;
+    }
     priceEl.textContent = d.price.toLocaleString() + "원";
     var isUp = d.changeRate >= 0;
     chgEl.textContent = (isUp ? "▲" : "▼") + Math.abs(d.changeRate).toFixed(2) + "%";
@@ -3363,8 +3429,15 @@
 
   // 새로고침 버튼
   document.getElementById("sector-refresh-btn").onclick = function() {
+    var btn = this;
+    btn.textContent = "⏳ 로딩중...";
+    btn.disabled = true;
     sectorPrices = {};
     renderSectors();
+    setTimeout(function() {
+      btn.textContent = "↻ 새로고침";
+      btn.disabled = false;
+    }, 3000);
   };
 
   renderSectors();
