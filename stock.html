@@ -1073,11 +1073,20 @@
         </div>
 
         <!-- 종목 추가 폼 -->
-        <!-- 종목 추가 폼 -->
         <div id="sector-add-form" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;display:none;flex-direction:column;gap:8px;">
           <div style="font-size:14px;font-weight:700;">+ 종목 추가</div>
           <select id="sector-add-theme" style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;"></select>
-          <input type="text" id="sector-add-name" placeholder="종목명 (예: 삼성전자)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+
+          <!-- 종목 검색 -->
+          <div style="font-size:12px;color:var(--text-sub);font-weight:700;">🔍 종목명으로 코드 검색</div>
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="stock-search-input" placeholder="종목명 검색 (예: 삼성전자)" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+            <button id="stock-search-btn" style="padding:8px 12px;background:#457B9D;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">검색</button>
+          </div>
+          <div id="stock-search-results" style="display:none;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px;"></div>
+
+          <div style="font-size:12px;color:var(--text-sub);font-weight:700;">또는 직접 입력</div>
+          <input type="text" id="sector-add-name" placeholder="종목명" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
           <input type="text" id="sector-add-code" placeholder="종목코드 6자리 (예: 005930)" maxlength="6" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
           <div style="display:flex;gap:8px;">
             <button id="sector-add-submit" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">추가</button>
@@ -3572,6 +3581,96 @@
 
       section.appendChild(grid);
       container.appendChild(section);
+    });
+  }
+
+  // ===== 종목 코드 검색 JS =====
+  function searchStock(query) {
+    var resultsEl = document.getElementById("stock-search-results");
+    if (!query) { resultsEl.style.display = "none"; return; }
+    resultsEl.style.display = "flex";
+    resultsEl.innerHTML = '<div style="font-size:12px;color:var(--text-sub);padding:4px;">검색 중...</div>';
+
+    // 네이버 증권 자동완성 API
+    var url = "https://api.allorigins.win/get?url=" + encodeURIComponent(
+      "https://ac.finance.naver.com/ac?q=" + encodeURIComponent(query) + "&q_enc=UTF-8&t_aid=&t_korail=&t_date=&_callback=&rq=4&rc=6&st=111&cq=&cd=&rd=1"
+    );
+
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        var text = res.contents || "";
+        // JSON 파싱 시도
+        var data;
+        try {
+          // _callback( ... ) 형식 제거
+          text = text.replace(/^[^(]+\(/, "").replace(/\);?\s*$/, "");
+          data = JSON.parse(text);
+        } catch(e) {
+          resultsEl.innerHTML = '<div style="font-size:12px;color:var(--text-sub);padding:4px;">결과 없음</div>';
+          return;
+        }
+
+        var items = [];
+        if (data && data.items && data.items[0]) {
+          items = data.items[0];
+        }
+
+        if (items.length === 0) {
+          resultsEl.innerHTML = '<div style="font-size:12px;color:var(--text-sub);padding:4px;">검색 결과가 없어요</div>';
+          return;
+        }
+
+        resultsEl.innerHTML = "";
+        items.forEach(function(item) {
+          // item: [종목명, 코드, 시장구분, ...]
+          var name = item[0] || "";
+          var code = item[1] || "";
+          if (!code || code.length !== 6) return;
+
+          var btn = document.createElement("button");
+          btn.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;text-align:left;width:100%;";
+          btn.innerHTML =
+            '<span style="font-size:13px;font-weight:700;color:var(--text-main);">' + name + '</span>' +
+            '<span style="font-size:12px;color:var(--accent);font-weight:700;">' + code + '</span>';
+          btn.onclick = function() {
+            document.getElementById("sector-add-name").value = name;
+            document.getElementById("sector-add-code").value = code;
+            resultsEl.style.display = "none";
+            document.getElementById("stock-search-input").value = "";
+          };
+          resultsEl.appendChild(btn);
+        });
+      })
+      .catch(function() {
+        // 프록시 실패 시 네이버 증권 검색 링크 제공
+        resultsEl.innerHTML =
+          '<div style="font-size:12px;padding:6px;">' +
+          '자동 검색 실패 😅<br>' +
+          '<a href="https://finance.naver.com/search/searchList.naver?query=' + encodeURIComponent(query) + '" target="_blank" style="color:var(--accent);font-weight:700;">👉 네이버 증권에서 검색하기</a>' +
+          '<br><span style="color:var(--text-sub);">코드를 확인 후 아래에 직접 입력해주세요</span>' +
+          '</div>';
+      });
+  }
+
+  var stockSearchBtn = document.getElementById("stock-search-btn");
+  var stockSearchInput = document.getElementById("stock-search-input");
+  if (stockSearchBtn) {
+    stockSearchBtn.onclick = function() {
+      searchStock(stockSearchInput.value.trim());
+    };
+  }
+  if (stockSearchInput) {
+    stockSearchInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") { e.preventDefault(); searchStock(this.value.trim()); }
+    });
+    // 입력할 때마다 실시간 검색
+    var searchTimer;
+    stockSearchInput.addEventListener("input", function() {
+      clearTimeout(searchTimer);
+      var q = this.value.trim();
+      if (q.length < 1) { document.getElementById("stock-search-results").style.display = "none"; return; }
+      searchTimer = setTimeout(function() { searchStock(q); }, 400);
     });
   }
 
