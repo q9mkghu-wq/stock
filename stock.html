@@ -1400,7 +1400,13 @@
   var watchlistCash = 0;
 
   function saveData(d) { dbRef.set(d); }
-  function saveWatchlist() { watchlistRef.set(watchlist); }
+  var watchlistSaving = false;
+  function saveWatchlist() {
+    watchlistSaving = true;
+    watchlistRef.set(watchlist).then(function() {
+      setTimeout(function() { watchlistSaving = false; }, 1500);
+    }).catch(function() { watchlistSaving = false; });
+  }
 
   // 현금 보유량 Firebase 로드
   watchlistCashRef.on("value", function(snap) {
@@ -1416,6 +1422,8 @@
   var watchlistLoaded = false;
 
   watchlistRef.on("value", function(snap) {
+    // 로컬 저장 중일 때는 Firebase 값으로 덮어쓰지 않음
+    if (watchlistSaving) return;
     var val = snap.val();
     var loaded = [];
 
@@ -1708,10 +1716,16 @@
         var qty = parseInt(qtyInput.value, 10);
         if (isNaN(qty) || qty < 0) qty = 0;
         s.qty = qty;
-        saveWatchlist();
+        // 해당 종목 인덱스의 qty만 업데이트 (전체 배열 재저장 안 함)
+        var idx = watchlist.indexOf(s);
+        if (idx !== -1) {
+          watchlistSaving = true;
+          watchlistRef.child(String(idx)).update({ qty: qty }).then(function() {
+            setTimeout(function() { watchlistSaving = false; }, 1500);
+          }).catch(function() { watchlistSaving = false; });
+        }
         updateTotal(s.code);
         updateGrandTotal();
-        // 배경색 즉시 업데이트
         row.style.background = qty > 0 ? "#FCE9E0" : "var(--card-bg)";
         row.style.border = qty > 0 ? "1px solid #E8B79A" : "1px solid var(--border)";
         qtyBtn.textContent = "✓";
