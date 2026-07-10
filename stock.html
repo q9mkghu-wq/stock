@@ -3464,14 +3464,40 @@
 
       // 테마 제목
       var titleRow = document.createElement("div");
-      titleRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--border);";
+      titleRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--border);gap:6px;";
       var titleEl = document.createElement("div");
-      titleEl.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";";
+      titleEl.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";flex:1;";
       titleEl.textContent = sector.name;
+
+      // ↑↓ 이동 버튼
+      var moveWrap = document.createElement("div");
+      moveWrap.style.cssText = "display:flex;gap:4px;flex-shrink:0;";
+
+      var upBtn = document.createElement("button");
+      upBtn.textContent = "↑";
+      upBtn.style.cssText = "padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:13px;";
+      upBtn.disabled = sectorIdx === 0;
+      upBtn.onclick = function() {
+        var tmp = sectorData[sectorIdx];
+        sectorData[sectorIdx] = sectorData[sectorIdx - 1];
+        sectorData[sectorIdx - 1] = tmp;
+        renderSectors();
+      };
+
+      var downBtn = document.createElement("button");
+      downBtn.textContent = "↓";
+      downBtn.style.cssText = "padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:13px;";
+      downBtn.disabled = sectorIdx === sectorData.length - 1;
+      downBtn.onclick = function() {
+        var tmp = sectorData[sectorIdx];
+        sectorData[sectorIdx] = sectorData[sectorIdx + 1];
+        sectorData[sectorIdx + 1] = tmp;
+        renderSectors();
+      };
 
       // 테마 삭제 버튼
       var delThemeBtn = document.createElement("button");
-      delThemeBtn.textContent = "테마삭제";
+      delThemeBtn.textContent = "삭제";
       delThemeBtn.style.cssText = "font-size:11px;padding:3px 8px;border:1px solid #ccc;border-radius:6px;background:none;color:#999;cursor:pointer;flex-shrink:0;";
       delThemeBtn.onclick = function() {
         if (!confirm("'" + sector.name + "' 테마 전체를 삭제하시겠습니까?")) return;
@@ -3479,8 +3505,11 @@
         renderSectors();
       };
 
+      moveWrap.appendChild(upBtn);
+      moveWrap.appendChild(downBtn);
+      moveWrap.appendChild(delThemeBtn);
       titleRow.appendChild(titleEl);
-      titleRow.appendChild(delThemeBtn);
+      titleRow.appendChild(moveWrap);
       section.appendChild(titleRow);
 
       var grid = document.createElement("div");
