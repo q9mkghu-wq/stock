@@ -3247,7 +3247,8 @@
   };
 
   // ===== 테마별 관련주 JS =====
-  var sectorData = [
+  var sectorRef = db.ref("sectorData");
+  var DEFAULT_SECTOR_DATA = [
     {
       name: "🛡️ 방산주", color: "#C9572E",
       stocks: [
@@ -3360,6 +3361,24 @@
       ]
     }
   ];
+
+  var sectorData = JSON.parse(JSON.stringify(DEFAULT_SECTOR_DATA));
+
+  // Firebase에서 사용자 커스텀 sectorData 로드
+  sectorRef.once("value", function(snap) {
+    var val = snap.val();
+    if (val && Array.isArray(val) && val.length > 0) {
+      sectorData = val;
+    } else if (val && typeof val === "object") {
+      var arr = Object.values(val).filter(function(v) { return v && v.name; });
+      if (arr.length > 0) sectorData = arr;
+    }
+    renderSectors();
+  });
+
+  function saveSectorData() {
+    sectorRef.set(sectorData);
+  }
 
   // ===== 섹터 주가 및 렌더링 =====
   var sectorPrices = {};
@@ -3504,6 +3523,7 @@
         var tmp = sectorData[sectorIdx];
         sectorData[sectorIdx] = sectorData[sectorIdx - 1];
         sectorData[sectorIdx - 1] = tmp;
+        saveSectorData();
         renderSectors();
       };
 
@@ -3515,6 +3535,7 @@
         var tmp = sectorData[sectorIdx];
         sectorData[sectorIdx] = sectorData[sectorIdx + 1];
         sectorData[sectorIdx + 1] = tmp;
+        saveSectorData();
         renderSectors();
       };
 
@@ -3525,6 +3546,7 @@
       delThemeBtn.onclick = function() {
         if (!confirm("'" + sector.name + "' 테마 전체를 삭제하시겠습니까?")) return;
         sectorData.splice(sectorIdx, 1);
+        saveSectorData();
         renderSectors();
       };
 
@@ -3576,6 +3598,7 @@
         delBtn.onclick = function() {
           if (!confirm(stock.name + "을(를) 삭제하시겠습니까?")) return;
           sector.stocks.splice(stockIdx, 1);
+          saveSectorData();
           renderSectors();
         };
 
@@ -3706,6 +3729,7 @@
     sectorData.push({ name: name, color: color, stocks: [] });
     document.getElementById("theme-add-name").value = "";
     document.getElementById("theme-add-form").style.display = "none";
+    saveSectorData();
     renderSectors();
   };
 
@@ -3728,6 +3752,7 @@
     document.getElementById("sector-add-name").value = "";
     document.getElementById("sector-add-code").value = "";
     document.getElementById("sector-add-form").style.display = "none";
+    saveSectorData();
     renderSectors();
   };
 
