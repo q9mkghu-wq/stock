@@ -392,7 +392,8 @@
   }
   footer { margin-top: 40px; font-size: 12px; color: var(--text-sub); text-align: center; }
 
-  .brief-topic-btn {
+  .theme-color-dot { transition: border-color 0.1s; }
+  input[type=radio]:checked + .theme-color-dot { border-color: #333 !important; }
     padding: 6px 12px;
     border-radius: 20px;
     border: 1px solid #c5b8d0;
@@ -1072,6 +1073,7 @@
         </div>
 
         <!-- 종목 추가 폼 -->
+        <!-- 종목 추가 폼 -->
         <div id="sector-add-form" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;display:none;flex-direction:column;gap:8px;">
           <div style="font-size:14px;font-weight:700;">+ 종목 추가</div>
           <select id="sector-add-theme" style="padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px;"></select>
@@ -1083,8 +1085,31 @@
           </div>
         </div>
 
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <!-- 테마 추가 폼 -->
+        <div id="theme-add-form" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;display:none;flex-direction:column;gap:8px;">
+          <div style="font-size:14px;font-weight:700;">+ 새 테마 추가</div>
+          <input type="text" id="theme-add-name" placeholder="테마명 (예: 🚀 우주항공주)" style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+          <div style="font-size:12px;color:var(--text-sub);">이모지를 앞에 붙이면 더 보기 좋아요. 예) 🌱 친환경주</div>
+          <div style="font-size:12px;color:var(--text-sub);">색상 선택</div>
+          <div id="theme-color-list" style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#C9572E" checked style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#C9572E;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#457B9D" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#457B9D;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#2A9D8F" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#2A9D8F;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#6D6875" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#6D6875;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#E63946" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#E63946;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#264653" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#264653;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#F4A261" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#F4A261;border:3px solid transparent;"></div></label>
+            <label style="cursor:pointer;"><input type="radio" name="theme-color" value="#1D3557" style="display:none;"><div class="theme-color-dot" style="width:28px;height:28px;border-radius:50%;background:#1D3557;border:3px solid transparent;"></div></label>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button id="theme-add-submit" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">테마 추가</button>
+            <button id="theme-add-cancel" style="padding:10px 14px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;">취소</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
           <button id="sector-add-toggle" style="flex:1;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;">+ 종목 추가</button>
+          <button id="theme-add-toggle" style="flex:1;padding:10px;border:1.5px dashed #457B9D;border-radius:10px;background:none;color:#457B9D;font-weight:700;font-size:13px;cursor:pointer;">+ 테마 추가</button>
           <button id="sector-refresh-btn" style="padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;" title="주가 새로고침">↻ 새로고침</button>
         </div>
 
@@ -3443,7 +3468,19 @@
       var titleEl = document.createElement("div");
       titleEl.style.cssText = "font-size:15px;font-weight:800;color:" + sector.color + ";";
       titleEl.textContent = sector.name;
+
+      // 테마 삭제 버튼
+      var delThemeBtn = document.createElement("button");
+      delThemeBtn.textContent = "테마삭제";
+      delThemeBtn.style.cssText = "font-size:11px;padding:3px 8px;border:1px solid #ccc;border-radius:6px;background:none;color:#999;cursor:pointer;flex-shrink:0;";
+      delThemeBtn.onclick = function() {
+        if (!confirm("'" + sector.name + "' 테마 전체를 삭제하시겠습니까?")) return;
+        sectorData.splice(sectorIdx, 1);
+        renderSectors();
+      };
+
       titleRow.appendChild(titleEl);
+      titleRow.appendChild(delThemeBtn);
       section.appendChild(titleRow);
 
       var grid = document.createElement("div");
@@ -3508,6 +3545,27 @@
       container.appendChild(section);
     });
   }
+
+  // 테마 추가 버튼
+  document.getElementById("theme-add-toggle").onclick = function() {
+    var form = document.getElementById("theme-add-form");
+    var stockForm = document.getElementById("sector-add-form");
+    stockForm.style.display = "none";
+    form.style.display = form.style.display === "none" ? "flex" : "none";
+  };
+  document.getElementById("theme-add-cancel").onclick = function() {
+    document.getElementById("theme-add-form").style.display = "none";
+  };
+  document.getElementById("theme-add-submit").onclick = function() {
+    var name = document.getElementById("theme-add-name").value.trim();
+    if (!name) { alert("테마명을 입력해주세요."); return; }
+    var colorRadio = document.querySelector('input[name="theme-color"]:checked');
+    var color = colorRadio ? colorRadio.value : "#457B9D";
+    sectorData.push({ name: name, color: color, stocks: [] });
+    document.getElementById("theme-add-name").value = "";
+    document.getElementById("theme-add-form").style.display = "none";
+    renderSectors();
+  };
 
   // 종목 추가 버튼
   document.getElementById("sector-add-toggle").onclick = function() {
