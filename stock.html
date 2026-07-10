@@ -1674,9 +1674,18 @@
         var qty = parseInt(qtyInput.value, 10);
         if (isNaN(qty) || qty < 0) qty = 0;
         s.qty = qty;
-        saveData(data);
-        renderTickerTape();
+        saveWatchlist();
+        updateTotal(s.code);
+        updateGrandTotal();
+        // 배경색 즉시 업데이트
+        row.style.background = qty > 0 ? "#FCE9E0" : "var(--card-bg)";
+        row.style.border = qty > 0 ? "1px solid #E8B79A" : "1px solid var(--border)";
+        qtyBtn.textContent = "✓";
+        setTimeout(function() { qtyBtn.textContent = "저장"; }, 800);
       };
+      qtyInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") qtyBtn.click();
+      });
 
       qtyRow.appendChild(qtyLabel);
       qtyRow.appendChild(qtyInput);
