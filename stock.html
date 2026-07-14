@@ -421,6 +421,8 @@
   .eco-calendar-item.medium { border-left-color:#F4A261; }
   .panel-collapse-btn:hover { border-color: var(--accent); color: var(--accent); }
   .eco-up { color:#E63946; }
+  .live-search-btn { display:block;padding:12px 16px;border-radius:10px;color:#fff;font-size:15px;font-weight:700;text-decoration:none;text-align:center; }
+  .live-search-btn:hover { opacity:0.85; }
   .eco-down { color:#457B9D; }
 
   /* 고정 좌우 스크롤 버튼 */
@@ -1275,6 +1277,54 @@
       </div>
 
     </div><!-- /panels-container -->
+
+    <!-- 주식 라이브 패널 -->
+    <div class="slide-panel" id="slide-live" style="min-width:360px;">
+      <div class="panel-title-row">
+        <span>📺 주식 라이브</span>
+        <div class="panel-title-actions">
+          <button class="move-btn panel-lr-btn" data-id="live" data-dir="-1">←</button>
+          <button class="move-btn panel-lr-btn" data-id="live" data-dir="1">→</button>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">버튼 클릭 시 해당 채널 유튜브 라이브로 이동합니다.</p>
+
+      <!-- 라이브 바로가기 버튼들 -->
+      <div id="live-channel-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+
+      <!-- 채널 추가 폼 -->
+      <div id="live-add-form" style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;display:none;flex-direction:column;gap:8px;">
+        <div style="font-size:14px;font-weight:700;">+ 채널 추가</div>
+        <input type="text" id="live-add-name" placeholder="채널명 (예: 이선엽)" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+        <input type="text" id="live-add-channelid" placeholder="유튜브 채널ID 또는 @핸들 (예: @leesunnyup)" style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;">
+        <div style="font-size:11px;color:var(--text-sub);">💡 채널 주소: youtube.com/@핸들명 또는 youtube.com/channel/채널ID</div>
+        <div style="display:flex;gap:8px;">
+          <button id="live-add-submit" style="flex:1;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">추가</button>
+          <button id="live-add-cancel" style="padding:10px 14px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;">취소</button>
+        </div>
+      </div>
+
+      <button id="live-add-toggle" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;margin-bottom:20px;">+ 채널 추가</button>
+
+      <!-- 라이브 키워드 검색 -->
+      <div style="border:2px solid #E63946;border-radius:14px;padding:14px;">
+        <div style="font-size:16px;font-weight:800;color:#E63946;margin-bottom:10px;">🔴 지금 라이브 검색</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <a href="https://www.youtube.com/results?search_query=%EC%A3%BC%EC%8B%9D+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#E63946;">
+            🔴 주식 라이브 검색
+          </a>
+          <a href="https://www.youtube.com/results?search_query=%EC%A3%BC%EC%8B%9D+%EC%8B%9C%EC%9E%A5+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#C9572E;">
+            🔴 주식 시장 라이브 검색
+          </a>
+          <a href="https://www.youtube.com/results?search_query=%EC%A6%9D%EC%8B%9C+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#457B9D;">
+            🔴 증시 라이브 검색
+          </a>
+          <a href="https://www.youtube.com/results?search_query=%EA%B2%BD%EC%A0%9C+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#2A9D8F;">
+            🔴 경제 라이브 검색
+          </a>
+        </div>
+      </div>
+    </div>
 
 </div><!-- /right-area -->
 
@@ -3721,6 +3771,142 @@
 
   renderSectors();
 
+  // ===== 주식 라이브 JS =====
+  var liveRef = db.ref("liveChannels");
+  var liveChannels = [
+    { name: "이선엽", handle: "@leesunnyup", color: "#C9572E", emoji: "📊" },
+    { name: "삼프로TV", handle: "@3protv", color: "#1D3557", emoji: "📺" }
+  ];
+
+  function getLiveUrl(channel) {
+    var handle = channel.handle || "";
+    if (handle.startsWith("@")) {
+      return "https://www.youtube.com/" + handle + "/live";
+    } else if (handle.startsWith("UC")) {
+      return "https://www.youtube.com/channel/" + handle + "/live";
+    }
+    return "https://www.youtube.com/results?search_query=" + encodeURIComponent(channel.name + " 라이브") + "&sp=EgJAAQ%253D%253D";
+  }
+
+  function getSearchUrl(channel) {
+    return "https://www.youtube.com/results?search_query=" + encodeURIComponent(channel.name + " 주식 라이브") + "&sp=EgJAAQ%253D%253D";
+  }
+
+  function renderLiveChannels() {
+    var list = document.getElementById("live-channel-list");
+    if (!list) return;
+    list.innerHTML = "";
+
+    liveChannels.forEach(function(ch, idx) {
+      var card = document.createElement("div");
+      card.style.cssText = "background:var(--card-bg);border:1.5px solid " + ch.color + ";border-radius:14px;padding:12px 14px;";
+
+      // 채널명 + 버튼들
+      var topRow = document.createElement("div");
+      topRow.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:8px;";
+
+      var nameEl = document.createElement("div");
+      nameEl.style.cssText = "font-size:16px;font-weight:800;color:" + ch.color + ";flex:1;";
+      nameEl.textContent = (ch.emoji || "📺") + " " + ch.name;
+
+      // 삭제 버튼
+      var delBtn = document.createElement("button");
+      delBtn.textContent = "✕";
+      delBtn.style.cssText = "background:none;border:none;color:#ccc;font-size:14px;cursor:pointer;";
+      delBtn.onclick = function() {
+        if (!confirm(ch.name + " 채널을 삭제하시겠습니까?")) return;
+        liveChannels.splice(idx, 1);
+        saveLiveChannels();
+        renderLiveChannels();
+      };
+
+      topRow.appendChild(nameEl);
+      topRow.appendChild(delBtn);
+      card.appendChild(topRow);
+
+      // 버튼 2개: 라이브 바로가기 + 검색
+      var btnRow = document.createElement("div");
+      btnRow.style.cssText = "display:flex;gap:8px;";
+
+      var liveBtn = document.createElement("a");
+      liveBtn.href = getLiveUrl(ch);
+      liveBtn.target = "_blank";
+      liveBtn.style.cssText = "flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;background:" + ch.color + ";color:#fff;border-radius:10px;text-decoration:none;font-weight:800;font-size:14px;";
+      liveBtn.innerHTML = "🔴 라이브 바로가기";
+
+      var searchBtn = document.createElement("a");
+      searchBtn.href = getSearchUrl(ch);
+      searchBtn.target = "_blank";
+      searchBtn.style.cssText = "padding:12px 14px;background:var(--bg);border:1.5px solid " + ch.color + ";color:" + ch.color + ";border-radius:10px;text-decoration:none;font-weight:700;font-size:13px;display:flex;align-items:center;";
+      searchBtn.textContent = "🔍 검색";
+
+      btnRow.appendChild(liveBtn);
+      btnRow.appendChild(searchBtn);
+      card.appendChild(btnRow);
+
+      // 핸들 표시
+      var handleEl = document.createElement("div");
+      handleEl.style.cssText = "font-size:11px;color:var(--text-sub);margin-top:6px;";
+      handleEl.textContent = ch.handle;
+      card.appendChild(handleEl);
+
+      list.appendChild(card);
+    });
+  }
+
+  function saveLiveChannels() {
+    liveRef.set(liveChannels);
+  }
+
+  // Firebase에서 채널 목록 로드
+  liveRef.once("value", function(snap) {
+    var val = snap.val();
+    if (val && Array.isArray(val) && val.length > 0) {
+      liveChannels = val;
+    } else if (val && typeof val === "object") {
+      var arr = Object.values(val).filter(function(v) { return v && v.name; });
+      if (arr.length > 0) liveChannels = arr;
+      else saveLiveChannels(); // 기본값 저장
+    } else {
+      saveLiveChannels(); // 기본값 저장
+    }
+    renderLiveChannels();
+  });
+
+  // 채널 추가 버튼
+  var liveAddToggle = document.getElementById("live-add-toggle");
+  if (liveAddToggle) {
+    liveAddToggle.onclick = function() {
+      var form = document.getElementById("live-add-form");
+      form.style.display = form.style.display === "none" ? "flex" : "none";
+    };
+  }
+
+  var liveAddCancel = document.getElementById("live-add-cancel");
+  if (liveAddCancel) {
+    liveAddCancel.onclick = function() {
+      document.getElementById("live-add-form").style.display = "none";
+    };
+  }
+
+  var liveAddSubmit = document.getElementById("live-add-submit");
+  if (liveAddSubmit) {
+    liveAddSubmit.onclick = function() {
+      var name = document.getElementById("live-add-name").value.trim();
+      var handle = document.getElementById("live-add-channelid").value.trim();
+      if (!name) { alert("채널명을 입력해주세요."); return; }
+      // 색상 자동 배정
+      var colors = ["#C9572E","#457B9D","#2A9D8F","#6D6875","#E63946","#264653","#F4A261","#1D3557"];
+      var color = colors[liveChannels.length % colors.length];
+      liveChannels.push({ name: name, handle: handle || "@" + name, color: color, emoji: "📺" });
+      saveLiveChannels();
+      renderLiveChannels();
+      document.getElementById("live-add-name").value = "";
+      document.getElementById("live-add-channelid").value = "";
+      document.getElementById("live-add-form").style.display = "none";
+    };
+  }
+
   // ===== 글로벌 이코노미 나침반 JS =====
   function ecoSetWidget(valId, chgId, value, change) {
     var valEl = document.getElementById(valId);
@@ -3898,7 +4084,7 @@
 
   function applyPanelOrder(order) {
     var container = document.getElementById("panels-container");
-    var existingIds = ["linkbox","ai","memo","ai-links","sectors"];
+    var existingIds = ["linkbox","ai","memo","ai-links","sectors","live"];
     order.forEach(function (key) {
       if (existingIds.indexOf(key) === -1) return;
       var panel = document.getElementById("slide-" + key);
@@ -3926,7 +4112,7 @@
   panelOrderRef.once("value", function(snap) {
     var val = snap.val();
     if (val && Array.isArray(val) && val.length > 0) {
-      var existingIds = ["linkbox","ai","memo","ai-links","sectors"];
+      var existingIds = ["linkbox","ai","memo","ai-links","sectors","live"];
       var filtered = val.filter(function(id) { return existingIds.indexOf(id) !== -1; });
       if (filtered.length > 0) {
         try { localStorage.setItem("panelOrder2", JSON.stringify(filtered)); } catch(e) {}
