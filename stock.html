@@ -1290,7 +1290,21 @@
           <button class="move-btn panel-lr-btn" data-id="live" data-dir="1">→</button>
         </div>
       </div>
-      <p style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">버튼 클릭 시 해당 채널 유튜브 라이브로 이동합니다.</p>
+
+      <!-- 🔴 지금 라이브 검색 (맨 위) -->
+      <div style="border:2px solid #E63946;border-radius:14px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:800;color:#E63946;margin-bottom:10px;">🔴 지금 라이브 검색</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <a href="https://www.youtube.com/results?search_query=%EC%A3%BC%EC%8B%9D+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#E63946;">🔴 주식 라이브 검색</a>
+          <a href="https://www.youtube.com/results?search_query=%EC%A3%BC%EC%8B%9D+%EC%8B%9C%EC%9E%A5+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#C9572E;">🔴 주식 시장 라이브 검색</a>
+          <a href="https://www.youtube.com/results?search_query=%EC%A6%9D%EC%8B%9C+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#457B9D;">🔴 증시 라이브 검색</a>
+          <a href="https://www.youtube.com/results?search_query=%EA%B2%BD%EC%A0%9C+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#2A9D8F;">🔴 경제 라이브 검색</a>
+        </div>
+      </div>
+
+      <!-- 즐겨찾는 채널 -->
+      <div style="font-size:15px;font-weight:800;color:var(--text-main);margin-bottom:10px;">⭐ 즐겨찾는 채널</div>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:10px;">버튼 클릭 시 해당 채널 유튜브 라이브로 이동합니다.</p>
 
       <!-- 라이브 바로가기 버튼들 -->
       <div id="live-channel-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
@@ -1306,27 +1320,7 @@
           <button id="live-add-cancel" style="padding:10px 14px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;">취소</button>
         </div>
       </div>
-
-      <button id="live-add-toggle" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;margin-bottom:20px;">+ 채널 추가</button>
-
-      <!-- 라이브 키워드 검색 -->
-      <div style="border:2px solid #E63946;border-radius:14px;padding:14px;">
-        <div style="font-size:16px;font-weight:800;color:#E63946;margin-bottom:10px;">🔴 지금 라이브 검색</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <a href="https://www.youtube.com/results?search_query=%EC%A3%BC%EC%8B%9D+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#E63946;">
-            🔴 주식 라이브 검색
-          </a>
-          <a href="https://www.youtube.com/results?search_query=%EC%A3%BC%EC%8B%9D+%EC%8B%9C%EC%9E%A5+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#C9572E;">
-            🔴 주식 시장 라이브 검색
-          </a>
-          <a href="https://www.youtube.com/results?search_query=%EC%A6%9D%EC%8B%9C+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#457B9D;">
-            🔴 증시 라이브 검색
-          </a>
-          <a href="https://www.youtube.com/results?search_query=%EA%B2%BD%EC%A0%9C+%EB%9D%BC%EC%9D%B4%EB%B8%8C&sp=EgJAAQ%253D%253D" target="_blank" class="live-search-btn" style="background:#2A9D8F;">
-            🔴 경제 라이브 검색
-          </a>
-        </div>
-      </div>
+      <button id="live-add-toggle" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;">+ 채널 추가</button>
     </div>
 
     <!-- 거래량 상위 종목 패널 -->
