@@ -1320,43 +1320,32 @@
           <button id="live-add-cancel" style="padding:10px 14px;background:none;border:1px solid var(--border);border-radius:8px;cursor:pointer;">취소</button>
         </div>
       </div>
-      <button id="live-add-toggle" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;">+ 채널 추가</button>
-    </div>
+      <button id="live-add-toggle" style="width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer;margin-bottom:20px;">+ 채널 추가</button>
 
-    <!-- 거래량 상위 종목 패널 -->
-    <div class="slide-panel" id="slide-volume">
-      <div class="panel-title-row">
-        <span>🔥 거래량 상위 종목</span>
-        <div class="panel-title-actions">
-          <button class="move-btn panel-lr-btn" data-id="volume" data-dir="-1">←</button>
-          <button class="move-btn panel-lr-btn" data-id="volume" data-dir="1">→</button>
+      <!-- 🔥 거래량 상위 종목 (라이브 패널 하단) -->
+      <div style="border:2px solid #2A9D8F;border-radius:14px;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+          <div style="font-size:16px;font-weight:800;color:#2A9D8F;">🔥 거래량 상위 종목</div>
+          <div style="display:flex;gap:6px;">
+            <button id="volume-market-kospi" style="padding:5px 12px;border-radius:20px;border:none;background:#2A9D8F;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">코스피</button>
+            <button id="volume-market-kosdaq" style="padding:5px 12px;border-radius:20px;border:1px solid #2A9D8F;background:none;color:#2A9D8F;font-size:12px;font-weight:700;cursor:pointer;">코스닥</button>
+            <button id="volume-refresh" style="padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--text-sub);font-size:12px;cursor:pointer;">↻</button>
+          </div>
         </div>
-      </div>
-
-      <!-- 탭 + 새로고침 -->
-      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-        <button id="volume-market-kospi" style="padding:8px 16px;border-radius:20px;border:none;background:#2A9D8F;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">코스피</button>
-        <button id="volume-market-kosdaq" style="padding:8px 16px;border-radius:20px;border:1px solid #2A9D8F;background:none;color:#2A9D8F;font-size:13px;font-weight:700;cursor:pointer;">코스닥</button>
-        <button id="volume-refresh" style="padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-sub);font-size:13px;font-weight:700;cursor:pointer;">↻ 새로고침</button>
-      </div>
-
-      <!-- 순위 헤더 -->
-      <div style="display:flex;gap:8px;padding:0 12px;margin-bottom:4px;font-size:11px;color:var(--text-sub);font-weight:700;">
-        <span style="min-width:22px;text-align:center;">순위</span>
-        <span style="flex:1;">종목명</span>
-        <span style="min-width:55px;text-align:right;">현재가</span>
-        <span style="min-width:50px;text-align:right;">등락률</span>
-        <span style="min-width:55px;text-align:right;">거래량</span>
-      </div>
-
-      <div id="volume-list" style="display:flex;flex-direction:column;gap:4px;">
-        <div style="font-size:13px;color:var(--text-sub);text-align:center;padding:20px;">불러오는 중...</div>
-      </div>
-
-      <!-- 바로가기 -->
-      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
-        <a id="volume-naver-link" href="https://finance.naver.com/sise/sise_quant.naver?sosok=0" target="_blank" style="flex:1;display:block;padding:10px;background:#03C75A;color:#fff;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;text-align:center;">🟢 네이버 거래량 순위</a>
-        <a href="https://finance.naver.com/sise/sise_rise.naver" target="_blank" style="flex:1;display:block;padding:10px;background:#E63946;color:#fff;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;text-align:center;">🔴 급등 종목</a>
+        <div style="display:flex;gap:8px;padding:0 4px;margin-bottom:4px;font-size:11px;color:var(--text-sub);font-weight:700;">
+          <span style="min-width:22px;text-align:center;">순위</span>
+          <span style="flex:1;">종목명</span>
+          <span style="min-width:60px;text-align:right;">현재가</span>
+          <span style="min-width:48px;text-align:right;">등락률</span>
+          <span style="min-width:52px;text-align:right;">거래량</span>
+        </div>
+        <div id="volume-list" style="display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:13px;color:var(--text-sub);text-align:center;padding:16px;">불러오는 중...</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <a id="volume-naver-link" href="https://finance.naver.com/sise/sise_quant.naver?sosok=0" target="_blank" style="flex:1;display:block;padding:9px;background:#03C75A;color:#fff;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;text-align:center;">🟢 네이버 거래량 순위</a>
+          <a href="https://finance.naver.com/sise/sise_rise.naver" target="_blank" style="flex:1;display:block;padding:9px;background:#E63946;color:#fff;border-radius:8px;text-decoration:none;font-size:12px;font-weight:700;text-align:center;">🔴 급등 종목</a>
+        </div>
       </div>
     </div>
 
@@ -4345,7 +4334,7 @@
 
   function applyPanelOrder(order) {
     var container = document.getElementById("panels-container");
-    var existingIds = ["linkbox","ai","memo","ai-links","sectors","live","volume"];
+    var existingIds = ["linkbox","ai","memo","ai-links","sectors","live"];
     order.forEach(function (key) {
       if (existingIds.indexOf(key) === -1) return;
       var panel = document.getElementById("slide-" + key);
@@ -4373,7 +4362,7 @@
   panelOrderRef.once("value", function(snap) {
     var val = snap.val();
     if (val && Array.isArray(val) && val.length > 0) {
-      var existingIds = ["linkbox","ai","memo","ai-links","sectors","live","volume"];
+      var existingIds = ["linkbox","ai","memo","ai-links","sectors","live"];
       var filtered = val.filter(function(id) { return existingIds.indexOf(id) !== -1; });
       if (filtered.length > 0) {
         try { localStorage.setItem("panelOrder2", JSON.stringify(filtered)); } catch(e) {}
