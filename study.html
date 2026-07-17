@@ -576,30 +576,45 @@ function renderDiarySection(container) {
 function addMemo(key, text) {
   text = (text || "").trim();
   if (!text) return;
-  studyRef.child("memos/" + key).push({ text: text, createdAt: Date.now() })
-    .then(function() {
-      console.log("메모 저장 성공:", key, text);
-    })
-    .catch(function(err) {
-      console.error("메모 저장 실패:", err);
-      alert("저장 실패: " + err.message + "\n\nFirebase 규칙을 확인해주세요.");
-    });
+  // studyData에 먼저 반영 후 화면 업데이트 (Firebase 응답 기다리지 않음)
+  var newKey = studyRef.child("memos/" + key).push();
+  var newItem = { text: text, createdAt: Date.now() };
+  if (!studyData.memos) studyData.memos = {};
+  if (!studyData.memos[key]) studyData.memos[key] = {};
+  studyData.memos[key][newKey.key] = newItem;
+  newKey.set(newItem);
+  // 화면 즉시 업데이트
+  var keyParts = key.split("-");
+  var partId = keyParts[0];
+  var conceptId = keyParts.slice(1).join("-");
+  var body = document.getElementById("memo-body-" + key);
+  if (body) renderMemoPanel(body, partId, conceptId);
 }
 
 function delMemo(key, id) {
   if (!confirm("메모를 삭제하시겠습니까?")) return;
   studyRef.child("memos/" + key + "/" + id).remove();
+  if (studyData.memos && studyData.memos[key]) delete studyData.memos[key][id];
+  var keyParts = key.split("-");
+  var body = document.getElementById("memo-body-" + key);
+  if (body) renderMemoPanel(body, keyParts[0], keyParts.slice(1).join("-"));
 }
 
 function addLink(key, title, url) {
-  studyRef.child("links/" + key).push({ title: title, url: url, createdAt: Date.now() })
-    .then(function() {
-      console.log("링크 저장 성공:", key, title, url);
-    })
-    .catch(function(err) {
-      console.error("링크 저장 실패:", err);
-      alert("저장 실패: " + err.message + "\n\nFirebase 규칙을 확인해주세요.");
-    });
+  var newKey = studyRef.child("links/" + key).push();
+  var newItem = { title: title, url: url, createdAt: Date.now() };
+  if (!studyData.links) studyData.links = {};
+  if (!studyData.links[key]) studyData.links[key] = {};
+  studyData.links[key][newKey.key] = newItem;
+  newKey.set(newItem);
+  // 화면 즉시 업데이트
+  var keyParts = key.split("-");
+  var partId = keyParts[0];
+  var conceptId = keyParts.slice(1).join("-");
+  var part = PARTS.find(function(p) { return p.id === partId; });
+  var color = part ? part.color : "#457B9D";
+  var body = document.getElementById("link-body-" + key);
+  if (body) renderLinkPanel(body, partId, conceptId, color);
 }
 
 function delLink(key, id) {
@@ -661,14 +676,12 @@ studyRef.on("value", function(snap) {
     completeBtn.childNodes[1].textContent = completed[part.id] ? "✅ 학습 완료!" : "완료 체크";
   }
 
-  // 각 개념 패널만 업데이트 (탭 상태 유지)
+  // 각 개념 패널만 업데이트 (재렌더링 없이)
   part.concepts.forEach(function(concept) {
-    var key = part.id + "-" + concept.id;
-    var tab = activeConceptTab[key] || "memo";
-    var rightEl = document.getElementById("cr-" + part.id + "-" + concept.id);
-    if (rightEl) {
-      renderConceptPanel(rightEl, part.id, concept.id, tab, part.color);
-    }
+    var memoBody = document.getElementById("memo-body-" + part.id + "-" + concept.id);
+    var linkBody = document.getElementById("link-body-" + part.id + "-" + concept.id);
+    if (memoBody) renderMemoPanel(memoBody, part.id, concept.id);
+    if (linkBody) renderLinkPanel(linkBody, part.id, concept.id, part.color);
   });
 });
 </script>
