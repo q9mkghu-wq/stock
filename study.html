@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 투자 공부 노트</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --bg: #F4F1EA;
+    --card-bg: #FFFFFF;
+    --border: #E0DCD2;
+    --text-main: #2C2A26;
+    --text-sub: #7A766C;
+    --accent: #C9572E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; background: var(--bg); color: var(--text-main); }
+
+  /* 헤더 */
+  .header {
+    background: var(--accent);
+    color: #fff;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-title { font-size: 20px; font-weight: 800; }
+  .header-back { color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 6px 12px; border: 1.5px solid rgba(255,255,255,0.6); border-radius: 8px; }
+
+  /* 진행률 바 */
+  .progress-bar { background: #fff; padding: 14px 20px; border-bottom: 2px solid var(--border); }
+  .progress-label { font-size: 13px; color: var(--text-sub); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-track { background: var(--border); border-radius: 10px; height: 8px; overflow: hidden; }
+  .progress-fill { background: var(--accent); height: 100%; border-radius: 10px; transition: width 0.5s; }
+
+  /* 탭 */
+  .tab-bar { display: flex; overflow-x: auto; background: #fff; border-bottom: 2px solid var(--border); padding: 0 8px; gap: 4px; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { flex-shrink: 0; padding: 12px 14px; border: none; background: none; font-size: 13px; font-weight: 700; color: var(--text-sub); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* 콘텐츠 */
+  .content { max-width: 680px; margin: 0 auto; padding: 16px; }
+
+  /* 파트 카드 */
+  .part-section { display: none; }
+  .part-section.active { display: block; }
+
+  .part-header { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 16px; border-left: 5px solid var(--accent); }
+  .part-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .part-desc { font-size: 14px; color: var(--text-sub); line-height: 1.6; }
+
+  /* 핵심 개념 */
+  .concept-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .concept-term { font-size: 15px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+  .concept-def { font-size: 13px; color: var(--text-main); line-height: 1.6; }
+  .concept-example { font-size:12px; color: var(--text-sub); margin-top:6px; background:#f9f7f4; padding:6px 10px; border-radius:6px; line-height:1.5; }
+
+  /* 섹션 제목 */
+  .section-title { font-size: 16px; font-weight: 800; color: var(--text-main); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+
+  /* 내 메모 */
+  .memo-item { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+  .memo-item-text { font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+  .memo-item-meta { font-size:11px; color: var(--text-sub); margin-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+  .memo-item-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; }
+  .memo-item-del:hover { color: var(--accent); }
+
+  /* 링크 카드 */
+  .link-card { display: flex; align-items: center; gap: 10px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; text-decoration: none; color: var(--text-main); }
+  .link-card-icon { font-size: 20px; flex-shrink: 0; }
+  .link-card-body { flex: 1; min-width: 0; }
+  .link-card-title { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-card-url { font-size: 11px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-card-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 14px; flex-shrink: 0; }
+
+  /* 완료 체크 */
+  .complete-btn { display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; width: 100%; font-size: 14px; font-weight: 700; color: var(--text-sub); margin-bottom: 16px; }
+  .complete-btn.done { border-color: #2A9D8F; color: #2A9D8F; background: #f0faf8; }
+  .complete-check { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .complete-btn.done .complete-check { background: #2A9D8F; border-color: #2A9D8F; color: #fff; }
+
+  /* 입력 폼 */
+  .add-form { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .add-form textarea, .add-form input[type=text], .add-form input[type=url] {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; resize: vertical; margin-bottom: 8px;
+  }
+  .add-form textarea { min-height: 80px; }
+  .btn-primary { padding: 10px 18px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .btn-secondary { padding: 10px 14px; background: none; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .btn-add-toggle { width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 10px; background: none; color: var(--accent); font-weight: 700; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
+
+  /* AI 질문 버튼 */
+  .ai-ask-btn { width: 100%; padding: 13px; background: #457B9D; color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 8px; }
+
+  /* 오늘의 공부 기록 */
+  .today-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 8px; }
+  .today-date { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+  .today-content { font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<!-- 헤더 -->
+<div class="header">
+  <div class="header-title">📚 투자 공부 노트</div>
+  <a href="stock.html" class="header-back">← 메인으로</a>
+</div>
+
+<!-- 진행률 -->
+<div class="progress-bar">
+  <div class="progress-label">
+    <span>학습 진행률</span>
+    <span id="progress-text">0 / 6 완료</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- 탭 -->
+<div class="tab-bar" id="tab-bar">
+  <button class="tab-btn active" data-part="basic">📊 기본 지식</button>
+  <button class="tab-btn" data-part="macro">🌍 거시경제</button>
+  <button class="tab-btn" data-part="chart">📈 차트 분석</button>
+  <button class="tab-btn" data-part="strategy">💡 투자 전략</button>
+  <button class="tab-btn" data-part="psychology">🧠 투자 심리</button>
+  <button class="tab-btn" data-part="diary">📰 오늘의 기록</button>
+</div>
+
+<div class="content">
+
+  <!-- ① 주식 기본 지식 -->
+  <div class="part-section active" id="part-basic">
+    <div class="part-header" style="border-left-color:#C9572E;">
+      <div class="part-title">📊 주식 기본 지식</div>
+      <div class="part-desc">기업의 가치를 숫자로 읽는 법. PER·PBR·ROE·EPS를 이해하면 좋은 주식과 나쁜 주식을 구별할 수 있어요.</div>
+    </div>
+    <button class="complete-btn" id="complete-basic" onclick="toggleComplete('basic')">
+      <div class="complete-check" id="check-basic"></div>
+      <span id="complete-basic-text">이 파트 학습 완료 체크</span>
+    </button>
+
+    <div class="section-title">📖 핵심 개념</div>
+    <div class="concept-card">
+      <div class="concept-term">PER (주가수익비율)</div>
+      <div class="concept-def">주가 ÷ 주당순이익(EPS). 이 주식이 이익 대비 얼마나 비싼지 나타내요.</div>
+      <div class="concept-example">💡 PER 10 = 지금 이 가격이면 10년치 이익으로 본전. PER이 낮을수록 상대적으로 싸다는 의미. 단, 업종별로 기준이 달라요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">PBR (주가순자산비율)</div>
+      <div class="concept-def">주가 ÷ 주당순자산. 회사 자산 대비 주가가 얼마인지 보여줘요.</div>
+      <div class="concept-example">💡 PBR 1 미만 = 회사를 지금 당장 청산해도 주가보다 많이 받을 수 있다는 의미. 저평가 신호일 수 있어요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">ROE (자기자본이익률)</div>
+      <div class="concept-def">순이익 ÷ 자기자본 × 100. 내 돈으로 얼마나 잘 벌었는지 측정해요.</div>
+      <div class="concept-example">💡 ROE 15% 이상이면 우량 기업. 워런 버핏은 ROE 15% 이상 기업만 투자했어요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">EPS (주당순이익)</div>
+      <div class="concept-def">순이익 ÷ 총 발행 주식수. 주식 1주가 1년에 얼마를 버는지 나타내요.</div>
+      <div class="concept-example">💡 EPS가 꾸준히 증가하는 기업 = 실적이 성장하는 기업. PER 계산의 기초가 돼요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">재무제표 3가지</div>
+      <div class="concept-def">① 손익계산서 (얼마 벌었나) ② 재무상태표 (얼마 갖고 있나) ③ 현금흐름표 (돈이 실제로 들어왔나)</div>
+      <div class="concept-example">💡 이익이 있어도 현금흐름이 마이너스면 위험신호. 네이버 증권에서 재무 탭에서 확인 가능해요.</div>
+    </div>
+
+    <div class="section-title">🤖 AI에게 질문하기</div>
+    <button class="ai-ask-btn" onclick="askAI('basic')">🤖 기본 지식 더 공부하기 →</button>
+
+    <div class="section-title">📝 내 메모</div>
+    <div id="memo-basic"></div>
+    <button class="btn-add-toggle" onclick="toggleMemoForm('basic')">+ 메모 추가</button>
+    <div id="memo-form-basic" class="add-form" style="display:none;">
+      <textarea id="memo-input-basic" placeholder="공부하면서 느낀 점, 궁금한 것, 핵심 내용을 적어보세요..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addMemo('basic')">저장</button>
+        <button class="btn-secondary" onclick="toggleMemoForm('basic')">취소</button>
+      </div>
+    </div>
+
+    <div class="section-title">🔗 참고 링크</div>
+    <div id="links-basic"></div>
+    <button class="btn-add-toggle" onclick="toggleLinkForm('basic')">+ 링크 추가</button>
+    <div id="link-form-basic" class="add-form" style="display:none;">
+      <input type="text" id="link-title-basic" placeholder="링크 제목 (예: PER 완전 정복 강의)">
+      <input type="url" id="link-url-basic" placeholder="URL (https://...)">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addLink('basic')">추가</button>
+        <button class="btn-secondary" onclick="toggleLinkForm('basic')">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 거시경제 흐름 -->
+  <div class="part-section" id="part-macro">
+    <div class="part-header" style="border-left-color:#457B9D;">
+      <div class="part-title">🌍 거시경제 흐름</div>
+      <div class="part-desc">금리·환율·원자재가 주식시장에 미치는 영향. 큰 그림을 알면 파도를 타는 것이 가능해요.</div>
+    </div>
+    <button class="complete-btn" id="complete-macro" onclick="toggleComplete('macro')">
+      <div class="complete-check" id="check-macro"></div>
+      <span id="complete-macro-text">이 파트 학습 완료 체크</span>
+    </button>
+
+    <div class="section-title">📖 핵심 개념</div>
+    <div class="concept-card">
+      <div class="concept-term">금리와 주가의 관계</div>
+      <div class="concept-def">금리 올라가면 → 대출 부담 증가, 채권 매력 증가 → 주식에서 돈 빠짐 → 주가 하락 경향</div>
+      <div class="concept-example">💡 금리↑ = 주가↓ (일반적 경향). 2022년 미국 금리 급등 시 나스닥 -33% 폭락이 대표적 예시.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">환율과 수출기업</div>
+      <div class="concept-def">원화 약세(달러 강세) → 수출기업 실적 좋아짐. 반대로 원화 강세 → 수출기업 불리.</div>
+      <div class="concept-example">💡 삼성전자·현대차 같은 수출기업은 원달러 환율 오르면 실적 개선. 환율 1,400원 vs 1,200원 차이가 엄청남.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">연준(Fed)과 FOMC</div>
+      <div class="concept-def">미국 중앙은행. 1년에 8번 FOMC 회의에서 금리 결정. 전 세계 금융시장에 가장 큰 영향.</div>
+      <div class="concept-example">💡 FOMC 발표 날은 시장이 크게 움직임. "점도표"로 앞으로 금리 방향을 예측할 수 있어요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">CPI (소비자물가지수)</div>
+      <div class="concept-def">물가 상승률 측정. 인플레이션 수치. 매월 미국 발표 시 시장이 크게 반응해요.</div>
+      <div class="concept-example">💡 CPI가 예상보다 높게 나오면 → 금리 더 올릴 수 있다 → 주가 하락. 낮게 나오면 → 금리 인하 기대 → 주가 상승.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">PMI (구매관리자지수)</div>
+      <div class="concept-def">기업 구매담당자들의 경기 체감지수. 50 이상 = 경기 확장, 50 미만 = 경기 축소.</div>
+      <div class="concept-example">💡 중국 PMI가 중요한 이유: 한국은 중국 수출 의존도가 높아서 중국 경기 좋으면 한국 증시도 좋아지는 경향.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">경기 사이클 4단계</div>
+      <div class="concept-def">① 회복기 → ② 확장기 → ③ 후퇴기 → ④ 침체기 순환. 각 단계마다 잘 오르는 섹터가 달라요.</div>
+      <div class="concept-example">💡 회복기: 금융·부동산 강세 / 확장기: 기술·소비재 강세 / 후퇴기: 헬스케어 강세 / 침체기: 현금·채권 강세</div>
+    </div>
+
+    <div class="section-title">🤖 AI에게 질문하기</div>
+    <button class="ai-ask-btn" onclick="askAI('macro')">🤖 거시경제 더 공부하기 →</button>
+
+    <div class="section-title">📝 내 메모</div>
+    <div id="memo-macro"></div>
+    <button class="btn-add-toggle" onclick="toggleMemoForm('macro')">+ 메모 추가</button>
+    <div id="memo-form-macro" class="add-form" style="display:none;">
+      <textarea id="memo-input-macro" placeholder="공부하면서 느낀 점을 적어보세요..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addMemo('macro')">저장</button>
+        <button class="btn-secondary" onclick="toggleMemoForm('macro')">취소</button>
+      </div>
+    </div>
+    <div class="section-title">🔗 참고 링크</div>
+    <div id="links-macro"></div>
+    <button class="btn-add-toggle" onclick="toggleLinkForm('macro')">+ 링크 추가</button>
+    <div id="link-form-macro" class="add-form" style="display:none;">
+      <input type="text" id="link-title-macro" placeholder="링크 제목">
+      <input type="url" id="link-url-macro" placeholder="URL">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addLink('macro')">추가</button>
+        <button class="btn-secondary" onclick="toggleLinkForm('macro')">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ 차트/기술적 분석 -->
+  <div class="part-section" id="part-chart">
+    <div class="part-header" style="border-left-color:#2A9D8F;">
+      <div class="part-title">📈 차트/기술적 분석</div>
+      <div class="part-desc">차트로 매수·매도 타이밍을 잡는 방법. 이동평균선과 거래량만 봐도 큰 흐름이 보여요.</div>
+    </div>
+    <button class="complete-btn" id="complete-chart" onclick="toggleComplete('chart')">
+      <div class="complete-check" id="check-chart"></div>
+      <span id="complete-chart-text">이 파트 학습 완료 체크</span>
+    </button>
+
+    <div class="section-title">📖 핵심 개념</div>
+    <div class="concept-card">
+      <div class="concept-term">이동평균선 (MA)</div>
+      <div class="concept-def">일정 기간 주가 평균을 이은 선. 5일·20일·60일·120일선을 주로 봐요.</div>
+      <div class="concept-example">💡 주가가 20일선 위에 있으면 단기 상승추세. 120일선(장기) 아래로 떨어지면 하락추세 진입 신호. 골든크로스(단기선이 장기선 돌파) = 매수 신호.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">지지선과 저항선</div>
+      <div class="concept-def">지지선 = 주가가 반복적으로 튀어오르는 가격대. 저항선 = 반복적으로 막히는 가격대.</div>
+      <div class="concept-example">💡 저항선을 뚫고 올라가면 그 저항선이 지지선으로 바뀜. 이 원리로 매수 타이밍을 잡아요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">거래량</div>
+      <div class="concept-def">하루에 거래된 주식 수. 주가 변동의 신뢰도를 판단하는 핵심 지표.</div>
+      <div class="concept-example">💡 주가 상승 + 거래량 증가 = 신뢰할 수 있는 상승. 주가 상승 + 거래량 감소 = 힘이 약한 상승, 주의 필요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">RSI (상대강도지수)</div>
+      <div class="concept-def">0~100 사이 수치. 70 이상 = 과매수(너무 많이 오름), 30 이하 = 과매도(너무 많이 내림).</div>
+      <div class="concept-example">💡 RSI 30 이하면 반등 가능성 높음. 하지만 하락장에서는 RSI가 낮아도 계속 떨어질 수 있으니 주의.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">캔들 차트 읽기</div>
+      <div class="concept-def">빨간봉 = 상승, 파란봉 = 하락. 봉의 몸통과 꼬리로 하루의 매수·매도 싸움을 알 수 있어요.</div>
+      <div class="concept-example">💡 긴 윗꼬리 = 고점에서 매도세 강함. 긴 아랫꼬리 = 저점에서 매수세 강함. 장대 양봉 = 강한 상승신호.</div>
+    </div>
+
+    <div class="section-title">🤖 AI에게 질문하기</div>
+    <button class="ai-ask-btn" onclick="askAI('chart')">🤖 차트 분석 더 공부하기 →</button>
+
+    <div class="section-title">📝 내 메모</div>
+    <div id="memo-chart"></div>
+    <button class="btn-add-toggle" onclick="toggleMemoForm('chart')">+ 메모 추가</button>
+    <div id="memo-form-chart" class="add-form" style="display:none;">
+      <textarea id="memo-input-chart" placeholder="공부하면서 느낀 점을 적어보세요..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addMemo('chart')">저장</button>
+        <button class="btn-secondary" onclick="toggleMemoForm('chart')">취소</button>
+      </div>
+    </div>
+    <div class="section-title">🔗 참고 링크</div>
+    <div id="links-chart"></div>
+    <button class="btn-add-toggle" onclick="toggleLinkForm('chart')">+ 링크 추가</button>
+    <div id="link-form-chart" class="add-form" style="display:none;">
+      <input type="text" id="link-title-chart" placeholder="링크 제목">
+      <input type="url" id="link-url-chart" placeholder="URL">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addLink('chart')">추가</button>
+        <button class="btn-secondary" onclick="toggleLinkForm('chart')">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 투자 전략 -->
+  <div class="part-section" id="part-strategy">
+    <div class="part-header" style="border-left-color:#E9C46A;">
+      <div class="part-title">💡 투자 전략</div>
+      <div class="part-desc">분할매수, 손절, 섹터 순환. 원칙 없이 투자하면 반드시 크게 잃어요. 나만의 원칙을 만들어야 해요.</div>
+    </div>
+    <button class="complete-btn" id="complete-strategy" onclick="toggleComplete('strategy')">
+      <div class="complete-check" id="check-strategy"></div>
+      <span id="complete-strategy-text">이 파트 학습 완료 체크</span>
+    </button>
+
+    <div class="section-title">📖 핵심 개념</div>
+    <div class="concept-card">
+      <div class="concept-term">분할매수</div>
+      <div class="concept-def">한 번에 다 사지 않고 나눠서 사는 전략. 평균 단가를 낮추는 효과.</div>
+      <div class="concept-example">💡 예: 100만원 투자 시 → 30만원 먼저 사고 → 떨어지면 30만원 추가 → 더 떨어지면 40만원 추가. 바닥을 알 수 없으니 나눠서.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">손절 (Stop Loss)</div>
+      <div class="concept-def">손실을 인정하고 파는 것. 보통 -8~10% 기준을 미리 정해놓아요.</div>
+      <div class="concept-example">💡 손절 안 하면 -10%가 -50%가 됨. "설마 오르겠지"는 금물. 손절은 실패가 아니라 자산 보호예요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">섹터 로테이션</div>
+      <div class="concept-def">경기 사이클에 따라 강한 섹터가 바뀌는 현상. 이 흐름을 따라가는 전략.</div>
+      <div class="concept-example">💡 금리 인상기 → 금융주 강세 / 금리 인하기 → 성장주·기술주 강세. 방산·조선은 지정학적 리스크 때 강세.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">포트폴리오 분산</div>
+      <div class="concept-def">달걀을 한 바구니에 담지 않기. 여러 섹터·종목에 나눠 투자해 리스크 줄이기.</div>
+      <div class="concept-example">💡 한 종목에 전체 자산 50% 이상 넣지 않기. 국내주식 + 해외ETF + 현금 조합 추천.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">매도 전략</div>
+      <div class="concept-def">목표가를 미리 정하고 도달하면 일부 매도. 분할매도로 수익 확정.</div>
+      <div class="concept-example">💡 +20% 목표 달성 시 절반 매도해 원금 회수. 나머지는 더 오르는 걸 기대. 수익은 실현해야 진짜 수익.</div>
+    </div>
+
+    <div class="section-title">✍️ 나의 투자 원칙</div>
+    <div id="my-principles" style="background:var(--card-bg);border:2px solid var(--accent);border-radius:12px;padding:14px;margin-bottom:10px;min-height:80px;">
+      <div id="principles-text" style="font-size:14px;line-height:1.8;color:var(--text-sub);">아직 작성된 투자 원칙이 없어요. 아래에 나만의 원칙을 적어보세요.</div>
+    </div>
+    <button class="btn-add-toggle" onclick="togglePrinciplesForm()">✏️ 투자 원칙 작성/수정</button>
+    <div id="principles-form" class="add-form" style="display:none;">
+      <textarea id="principles-input" placeholder="예)&#10;1. 한 종목에 20% 이상 투자하지 않는다&#10;2. -10% 손실 시 반드시 손절한다&#10;3. 뉴스만 보고 충동 매수하지 않는다" style="min-height:120px;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="savePrinciples()">저장</button>
+        <button class="btn-secondary" onclick="togglePrinciplesForm()">취소</button>
+      </div>
+    </div>
+
+    <div class="section-title">🤖 AI에게 질문하기</div>
+    <button class="ai-ask-btn" onclick="askAI('strategy')">🤖 투자 전략 더 공부하기 →</button>
+
+    <div class="section-title">📝 내 메모</div>
+    <div id="memo-strategy"></div>
+    <button class="btn-add-toggle" onclick="toggleMemoForm('strategy')">+ 메모 추가</button>
+    <div id="memo-form-strategy" class="add-form" style="display:none;">
+      <textarea id="memo-input-strategy" placeholder="공부하면서 느낀 점을 적어보세요..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addMemo('strategy')">저장</button>
+        <button class="btn-secondary" onclick="toggleMemoForm('strategy')">취소</button>
+      </div>
+    </div>
+    <div class="section-title">🔗 참고 링크</div>
+    <div id="links-strategy"></div>
+    <button class="btn-add-toggle" onclick="toggleLinkForm('strategy')">+ 링크 추가</button>
+    <div id="link-form-strategy" class="add-form" style="display:none;">
+      <input type="text" id="link-title-strategy" placeholder="링크 제목">
+      <input type="url" id="link-url-strategy" placeholder="URL">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addLink('strategy')">추가</button>
+        <button class="btn-secondary" onclick="toggleLinkForm('strategy')">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑤ 투자 심리 -->
+  <div class="part-section" id="part-psychology">
+    <div class="part-header" style="border-left-color:#6D6875;">
+      <div class="part-title">🧠 투자 심리 관리</div>
+      <div class="part-desc">주식에서 돈 잃는 이유의 80%는 심리 때문이에요. 공포와 탐욕을 다스리는 것이 핵심.</div>
+    </div>
+    <button class="complete-btn" id="complete-psychology" onclick="toggleComplete('psychology')">
+      <div class="complete-check" id="check-psychology"></div>
+      <span id="complete-psychology-text">이 파트 학습 완료 체크</span>
+    </button>
+
+    <div class="section-title">📖 핵심 개념</div>
+    <div class="concept-card">
+      <div class="concept-term">공포와 탐욕 지수 (Fear & Greed)</div>
+      <div class="concept-def">시장의 심리 온도계. 0(극도 공포) ~ 100(극도 탐욕). 역발상 투자의 기준이 돼요.</div>
+      <div class="concept-example">💡 극도 공포(0~25)일 때 = 매수 기회. 극도 탐욕(75~100)일 때 = 조심해야 할 시기. "남들이 탐욕스러울 때 두려워하라" - 워런 버핏</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">FOMO (Fear Of Missing Out)</div>
+      <div class="concept-def">나만 수익 못 낼까봐 두려운 심리. 급등 주식을 뒤늦게 따라 사는 주요 원인.</div>
+      <div class="concept-example">💡 카카오톡 단톡방에서 "이거 지금 사야 해!"라는 말을 들으면 이미 늦었을 가능성이 높아요. FOMO를 조심하세요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">손실 회피 편향</div>
+      <div class="concept-def">이익 100만원보다 손실 100만원이 2배 더 아프게 느껴지는 심리.</div>
+      <div class="concept-example">💡 이 때문에 손절을 못하고 버팀. "언젠간 오르겠지"하며 물타기를 반복. 손실 회피를 알면 손절이 쉬워져요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">확증 편향</div>
+      <div class="concept-def">내가 산 주식에 대한 좋은 뉴스만 찾아보려는 심리.</div>
+      <div class="concept-example">💡 "이 주식 좋다는 기사만 나오네"가 아니라 부정적 의견도 균형 있게 봐야 해요. 반대 의견을 찾는 습관이 중요.</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-term">매매 일지 쓰기</div>
+      <div class="concept-def">매수/매도 이유, 당시 감정, 결과를 기록. 내 실수 패턴을 발견할 수 있어요.</div>
+      <div class="concept-example">💡 "왜 샀나? 왜 팔았나? 감정은 어땠나?" 3가지를 기록하면 3개월 후 자신의 패턴이 보여요.</div>
+    </div>
+
+    <div class="section-title">🤖 AI에게 질문하기</div>
+    <button class="ai-ask-btn" onclick="askAI('psychology')">🤖 투자 심리 더 공부하기 →</button>
+
+    <div class="section-title">📝 내 메모</div>
+    <div id="memo-psychology"></div>
+    <button class="btn-add-toggle" onclick="toggleMemoForm('psychology')">+ 메모 추가</button>
+    <div id="memo-form-psychology" class="add-form" style="display:none;">
+      <textarea id="memo-input-psychology" placeholder="나의 투자 심리 패턴, 반성할 점을 적어보세요..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addMemo('psychology')">저장</button>
+        <button class="btn-secondary" onclick="toggleMemoForm('psychology')">취소</button>
+      </div>
+    </div>
+    <div class="section-title">🔗 참고 링크</div>
+    <div id="links-psychology"></div>
+    <button class="btn-add-toggle" onclick="toggleLinkForm('psychology')">+ 링크 추가</button>
+    <div id="link-form-psychology" class="add-form" style="display:none;">
+      <input type="text" id="link-title-psychology" placeholder="링크 제목">
+      <input type="url" id="link-url-psychology" placeholder="URL">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" onclick="addLink('psychology')">추가</button>
+        <button class="btn-secondary" onclick="toggleLinkForm('psychology')">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⑥ 오늘의 공부 기록 -->
+  <div class="part-section" id="part-diary">
+    <div class="part-header" style="border-left-color:#E63946;">
+      <div class="part-title">📰 오늘의 공부 기록</div>
+      <div class="part-desc">매일 공부한 내용을 간단히 기록해요. 나중에 다시 보면 성장이 보여요.</div>
+    </div>
+
+    <div class="add-form">
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px;">📝 오늘 공부한 내용</div>
+      <textarea id="diary-input" placeholder="오늘 배운 것, 느낀 것, 실천할 것을 적어보세요...&#10;&#10;예) PER이 낮다고 무조건 좋은 게 아니라는 걸 알았다. 업종별 평균 PER을 먼저 봐야 함." style="min-height:100px;"></textarea>
+      <button class="btn-primary" onclick="addDiary()" style="width:100%;">📅 오늘 기록 저장</button>
+    </div>
+
+    <div class="section-title">📋 공부 기록 목록</div>
+    <div id="diary-list"></div>
+  </div>
+
+</div><!-- /content -->
+
+<script>
+  // Firebase 초기화
+  var firebaseConfig = {
+    apiKey: "AIzaSyCUfXHfU6Bi1aFI90izeI8mEH21yJv_Cac",
+    authDomain: "stock-96d08.firebaseapp.com",
+    databaseURL: "https://stock-96d08-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "stock-96d08",
+    storageBucket: "stock-96d08.firebasestorage.app",
+    messagingSenderId: "386185757176",
+    appId: "1:386185757176:web:79e72e41e361af5399560d"
+  };
+  firebase.initializeApp(firebaseConfig);
+  var db = firebase.database();
+  var studyRef = db.ref("studyNote");
+
+  var parts = ["basic","macro","chart","strategy","psychology"];
+  var completed = {};
+
+  // ===== 탭 전환 =====
+  document.getElementById("tab-bar").addEventListener("click", function(e) {
+    var btn = e.target.closest(".tab-btn");
+    if (!btn) return;
+    document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
+    document.querySelectorAll(".part-section").forEach(function(s) { s.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("part-" + btn.dataset.part).classList.add("active");
+  });
+
+  // ===== 완료 체크 =====
+  function toggleComplete(part) {
+    completed[part] = !completed[part];
+    studyRef.child("completed/" + part).set(completed[part]);
+    updateCompleteUI(part);
+    updateProgress();
+  }
+
+  function updateCompleteUI(part) {
+    var btn = document.getElementById("complete-" + part);
+    var check = document.getElementById("check-" + part);
+    var text = document.getElementById("complete-" + part + "-text");
+    if (completed[part]) {
+      btn.classList.add("done");
+      check.textContent = "✓";
+      text.textContent = "✅ 학습 완료!";
+    } else {
+      btn.classList.remove("done");
+      check.textContent = "";
+      text.textContent = "이 파트 학습 완료 체크";
+    }
+  }
+
+  function updateProgress() {
+    var done = parts.filter(function(p) { return completed[p]; }).length;
+    var pct = Math.round(done / parts.length * 100);
+    document.getElementById("progress-text").textContent = done + " / " + parts.length + " 완료";
+    document.getElementById("progress-fill").style.width = pct + "%";
+  }
+
+  // ===== 메모 =====
+  function toggleMemoForm(part) {
+    var form = document.getElementById("memo-form-" + part);
+    form.style.display = form.style.display === "none" ? "block" : "none";
+  }
+
+  function addMemo(part) {
+    var input = document.getElementById("memo-input-" + part);
+    var text = input.value.trim();
+    if (!text) return;
+    studyRef.child("memos/" + part).push({ text: text, createdAt: Date.now() });
+    input.value = "";
+    toggleMemoForm(part);
+  }
+
+  function renderMemos(part, data) {
+    var el = document.getElementById("memo-" + part);
+    if (!el) return;
+    el.innerHTML = "";
+    if (!data) return;
+    var items = Object.keys(data).map(function(k) { return Object.assign({ id: k }, data[k]); })
+      .sort(function(a, b) { return b.createdAt - a.createdAt; });
+    items.forEach(function(item) {
+      var d = new Date(item.createdAt);
+      var dateStr = d.getFullYear() + "." + String(d.getMonth()+1).padStart(2,"0") + "." + String(d.getDate()).padStart(2,"0");
+      var div = document.createElement("div");
+      div.className = "memo-item";
+      div.innerHTML =
+        '<div class="memo-item-text">' + (item.text || "").replace(/</g,"&lt;") + '</div>' +
+        '<div class="memo-item-meta"><span>' + dateStr + '</span>' +
+        '<button class="memo-item-del" onclick="delMemo(\'' + part + '\',\'' + item.id + '\')">✕ 삭제</button></div>';
+      el.appendChild(div);
+    });
+  }
+
+  function delMemo(part, id) {
+    if (!confirm("메모를 삭제하시겠습니까?")) return;
+    studyRef.child("memos/" + part + "/" + id).remove();
+  }
+
+  // ===== 링크 =====
+  function toggleLinkForm(part) {
+    var form = document.getElementById("link-form-" + part);
+    form.style.display = form.style.display === "none" ? "block" : "none";
+  }
+
+  function addLink(part) {
+    var title = document.getElementById("link-title-" + part).value.trim();
+    var url = document.getElementById("link-url-" + part).value.trim();
+    if (!title || !url) { alert("제목과 URL을 입력해주세요."); return; }
+    if (!url.startsWith("http")) url = "https://" + url;
+    studyRef.child("links/" + part).push({ title: title, url: url, createdAt: Date.now() });
+    document.getElementById("link-title-" + part).value = "";
+    document.getElementById("link-url-" + part).value = "";
+    toggleLinkForm(part);
+  }
+
+  function renderLinks(part, data) {
+    var el = document.getElementById("links-" + part);
+    if (!el) return;
+    el.innerHTML = "";
+    if (!data) return;
+    var items = Object.keys(data).map(function(k) { return Object.assign({ id: k }, data[k]); })
+      .sort(function(a, b) { return b.createdAt - a.createdAt; });
+    items.forEach(function(item) {
+      var isYt = /youtube\.com|youtu\.be/.test(item.url);
+      var div = document.createElement("div");
+      div.style.cssText = "display:flex;align-items:center;gap:10px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:8px;";
+      div.innerHTML =
+        '<span style="font-size:20px;">' + (isYt ? "▶" : "🔗") + '</span>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<a href="' + item.url + '" target="_blank" style="font-size:13px;font-weight:700;color:var(--text-main);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (item.title || "").replace(/</g,"&lt;") + '</a>' +
+          '<div style="font-size:11px;color:var(--text-sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.url + '</div>' +
+        '</div>' +
+        '<button onclick="delLink(\'' + part + '\',\'' + item.id + '\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;">✕</button>';
+      el.appendChild(div);
+    });
+  }
+
+  function delLink(part, id) {
+    if (!confirm("링크를 삭제하시겠습니까?")) return;
+    studyRef.child("links/" + part + "/" + id).remove();
+  }
+
+  // ===== 투자 원칙 =====
+  function togglePrinciplesForm() {
+    var form = document.getElementById("principles-form");
+    var isOpen = form.style.display !== "none";
+    form.style.display = isOpen ? "none" : "block";
+    if (!isOpen) {
+      var cur = document.getElementById("principles-text").textContent;
+      if (cur !== "아직 작성된 투자 원칙이 없어요. 아래에 나만의 원칙을 적어보세요.") {
+        document.getElementById("principles-input").value = cur;
+      }
+    }
+  }
+
+  function savePrinciples() {
+    var text = document.getElementById("principles-input").value.trim();
+    if (!text) return;
+    studyRef.child("principles").set({ text: text, updatedAt: Date.now() });
+    document.getElementById("principles-form").style.display = "none";
+  }
+
+  // ===== 오늘의 기록 =====
+  function addDiary() {
+    var text = document.getElementById("diary-input").value.trim();
+    if (!text) return;
+    var today = new Date();
+    var dateStr = today.getFullYear() + "." + String(today.getMonth()+1).padStart(2,"0") + "." + String(today.getDate()).padStart(2,"0");
+    studyRef.child("diary").push({ text: text, date: dateStr, createdAt: Date.now() });
+    document.getElementById("diary-input").value = "";
+  }
+
+  function renderDiary(data) {
+    var el = document.getElementById("diary-list");
+    if (!el) return;
+    el.innerHTML = "";
+    if (!data) { el.innerHTML = '<div style="font-size:13px;color:var(--text-sub);text-align:center;padding:20px;">아직 기록이 없어요. 오늘 공부한 내용을 적어보세요!</div>'; return; }
+    var items = Object.keys(data).map(function(k) { return Object.assign({ id: k }, data[k]); })
+      .sort(function(a, b) { return b.createdAt - a.createdAt; });
+    items.forEach(function(item) {
+      var div = document.createElement("div");
+      div.className = "today-card";
+      div.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+          '<div class="today-date">📅 ' + (item.date || "") + '</div>' +
+          '<button onclick="delDiary(\'' + item.id + '\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;">✕</button>' +
+        '</div>' +
+        '<div class="today-content">' + (item.text || "").replace(/</g,"&lt;") + '</div>';
+      el.appendChild(div);
+    });
+  }
+
+  function delDiary(id) {
+    if (!confirm("기록을 삭제하시겠습니까?")) return;
+    studyRef.child("diary/" + id).remove();
+  }
+
+  // ===== AI 질문 =====
+  var aiPrompts = {
+    basic: "주식 투자의 기본 지식인 PER, PBR, ROE, EPS, 재무제표를 쉽고 친근하게 설명해줘. 고등학생도 이해할 수 있게, 실생활 예시를 들어서. 그리고 각 지표를 실제 투자에서 어떻게 활용하는지 알려줘.",
+    macro: "거시경제가 주식시장에 미치는 영향을 쉽게 설명해줘. 금리·환율·CPI·PMI·FOMC가 주가에 어떻게 연결되는지, 실제 사례를 들어서 이해하기 쉽게 알려줘.",
+    chart: "주식 차트 기술적 분석을 초보자도 이해할 수 있게 설명해줘. 이동평균선, 지지/저항선, 거래량, RSI, 캔들 패턴을 실전에서 어떻게 활용하는지 알려줘.",
+    strategy: "주식 투자 전략에서 가장 중요한 것들을 알려줘. 분할매수, 손절 기준, 섹터 로테이션, 포트폴리오 구성, 매도 전략을 실전 예시와 함께 쉽게 설명해줘.",
+    psychology: "주식 투자에서 심리 관리가 왜 중요한지, 그리고 어떻게 감정을 조절할 수 있는지 알려줘. FOMO, 손실회피, 확증편향 등 흔한 심리적 함정과 극복 방법을 알려줘."
+  };
+
+  function askAI(part) {
+    var prompt = aiPrompts[part] + "\n\n친구한테 설명하듯 자연스럽게, 한국어로 알려줘.";
+    window.open("https://claude.ai/new?q=" + encodeURIComponent(prompt), "_blank");
+  }
+
+  // ===== Firebase 실시간 동기화 =====
+  studyRef.on("value", function(snap) {
+    var val = snap.val() || {};
+
+    // 완료 상태
+    var comp = val.completed || {};
+    parts.forEach(function(p) {
+      completed[p] = !!comp[p];
+      updateCompleteUI(p);
+    });
+    updateProgress();
+
+    // 메모
+    parts.forEach(function(p) {
+      renderMemos(p, val.memos && val.memos[p]);
+    });
+
+    // 링크
+    parts.forEach(function(p) {
+      renderLinks(p, val.links && val.links[p]);
+    });
+
+    // 투자 원칙
+    if (val.principles && val.principles.text) {
+      document.getElementById("principles-text").style.color = "var(--text-main)";
+      document.getElementById("principles-text").textContent = val.principles.text;
+      document.getElementById("principles-input").value = val.principles.text;
+    }
+
+    // 일기
+    renderDiary(val.diary);
+  });
+</script>
+</body>
+</html>
