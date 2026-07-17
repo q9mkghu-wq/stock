@@ -46,9 +46,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR
 /* 핵심 개념 행 - 개념카드 + 메모/링크 나란히 */
 .concept-row {
   display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
+  grid-template-columns: 380px 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
   align-items: start;
 }
 .concept-card {
@@ -277,6 +277,7 @@ function renderContent() {
 function renderConceptRow(container, partId, concept, color) {
   var row = document.createElement("div");
   row.className = "concept-row";
+  row.id = "row-" + partId + "-" + concept.id;
 
   // 왼쪽: 개념 카드
   var card = document.createElement("div");
@@ -287,37 +288,125 @@ function renderConceptRow(container, partId, concept, color) {
     '<div class="concept-def">' + concept.def + '</div>' +
     '<div class="concept-example">' + concept.example + '</div>';
 
-  // 오른쪽: 메모 + 링크 패널
-  var right = document.createElement("div");
-  right.className = "concept-right";
-  right.id = "cr-" + partId + "-" + concept.id;
+  // 가운데: 메모 패널
+  var memoPanel = document.createElement("div");
+  memoPanel.className = "concept-right";
+  memoPanel.id = "memo-panel-" + partId + "-" + concept.id;
+  memoPanel.innerHTML = '<div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--border);">📝 메모</div>';
 
-  var tab = activeConceptTab[partId + "-" + concept.id] || "memo";
+  var memoBody = document.createElement("div");
+  memoBody.id = "memo-body-" + partId + "-" + concept.id;
+  memoPanel.appendChild(memoBody);
 
-  // 탭 버튼
-  var tabs = document.createElement("div");
-  tabs.className = "concept-right-tabs";
-  ["memo", "link"].forEach(function(t) {
-    var btn = document.createElement("button");
-    btn.className = "cr-tab" + (tab === t ? " active" : "");
-    btn.textContent = t === "memo" ? "📝 메모" : "🔗 링크";
-    btn.onclick = function() {
-      activeConceptTab[partId + "-" + concept.id] = t;
-      renderConceptPanel(right, partId, concept.id, t, color);
-    };
-    tabs.appendChild(btn);
-  });
-  right.appendChild(tabs);
+  // 오른쪽: 링크 패널
+  var linkPanel = document.createElement("div");
+  linkPanel.className = "concept-right";
+  linkPanel.id = "link-panel-" + partId + "-" + concept.id;
+  linkPanel.innerHTML = '<div style="font-size:13px;font-weight:800;color:#457B9D;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--border);">🔗 참고 링크</div>';
 
-  // 패널 내용
-  var panelBody = document.createElement("div");
-  panelBody.id = "cr-body-" + partId + "-" + concept.id;
-  right.appendChild(panelBody);
-  renderConceptPanel(right, partId, concept.id, tab, color);
+  var linkBody = document.createElement("div");
+  linkBody.id = "link-body-" + partId + "-" + concept.id;
+  linkPanel.appendChild(linkBody);
 
   row.appendChild(card);
-  row.appendChild(right);
+  row.appendChild(memoPanel);
+  row.appendChild(linkPanel);
   container.appendChild(row);
+
+  // 초기 렌더
+  renderMemoPanel(memoBody, partId, concept.id);
+  renderLinkPanel(linkBody, partId, concept.id, color);
+}
+
+function renderMemoPanel(body, partId, conceptId) {
+  var key = partId + "-" + conceptId;
+  body.innerHTML = "";
+
+  // 메모 목록
+  var memos = studyData.memos && studyData.memos[key] ? studyData.memos[key] : {};
+  var memoItems = Object.keys(memos).map(function(k) { return Object.assign({ _id: k }, memos[k]); })
+    .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+  if (memoItems.length > 0) {
+    var list = document.createElement("div");
+    list.className = "cr-memo-list";
+    memoItems.forEach(function(m) {
+      var item = document.createElement("div");
+      item.className = "cr-memo-item";
+      item.innerHTML =
+        '<span class="cr-memo-text">' + (m.text || "").replace(/</g,"&lt;") + '</span>' +
+        '<button class="cr-del-btn" onclick="delMemo(\'' + key + '\',\'' + m._id + '\')">✕</button>';
+      list.appendChild(item);
+    });
+    body.appendChild(list);
+  }
+
+  // 메모 입력
+  var ta = document.createElement("textarea");
+  ta.placeholder = "메모 입력... (Ctrl+Enter 저장)";
+  ta.style.cssText = "width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;min-height:60px;margin-top:6px;";
+  var btn = document.createElement("button");
+  btn.textContent = "💾 메모 저장";
+  btn.style.cssText = "width:100%;margin-top:6px;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;";
+  btn.onclick = function() {
+    var text = ta.value.trim();
+    if (!text) { alert("메모 내용을 입력해주세요."); return; }
+    addMemo(key, text);
+    ta.value = "";
+  };
+  ta.addEventListener("keydown", function(e) { if (e.ctrlKey && e.key === "Enter") btn.click(); });
+  body.appendChild(ta);
+  body.appendChild(btn);
+}
+
+function renderLinkPanel(body, partId, conceptId, color) {
+  var key = partId + "-" + conceptId;
+  body.innerHTML = "";
+
+  // 링크 목록
+  var links = studyData.links && studyData.links[key] ? studyData.links[key] : {};
+  var linkItems = Object.keys(links).map(function(k) { return Object.assign({ _id: k }, links[k]); })
+    .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+
+  if (linkItems.length > 0) {
+    linkItems.forEach(function(l) {
+      var isYt = /youtube\.com|youtu\.be/.test(l.url || "");
+      var a = document.createElement("a");
+      a.className = "cr-link-item";
+      a.href = l.url || "#";
+      a.target = "_blank";
+      a.innerHTML =
+        '<span style="font-size:16px;">' + (isYt ? "▶" : "🔗") + '</span>' +
+        '<span class="cr-link-title">' + (l.title || "").replace(/</g,"&lt;") + '</span>' +
+        '<button onclick="event.preventDefault();delLink(\'' + key + '\',\'' + l._id + '\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;">✕</button>';
+      body.appendChild(a);
+    });
+  }
+
+  // 링크 입력
+  var titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.placeholder = "링크 제목";
+  titleInput.style.cssText = "width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-top:6px;display:block;";
+  var urlInput = document.createElement("input");
+  urlInput.type = "url";
+  urlInput.placeholder = "URL (https://...)";
+  urlInput.style.cssText = "width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-top:6px;display:block;";
+  var linkBtn = document.createElement("button");
+  linkBtn.textContent = "🔗 링크 저장";
+  linkBtn.style.cssText = "width:100%;margin-top:6px;padding:10px;background:#457B9D;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;";
+  linkBtn.onclick = function() {
+    var t = titleInput.value.trim();
+    var u = urlInput.value.trim();
+    if (!t || !u) { alert("제목과 URL을 모두 입력해주세요."); return; }
+    if (!u.startsWith("http")) u = "https://" + u;
+    addLink(key, t, u);
+    titleInput.value = ""; urlInput.value = "";
+  };
+  urlInput.addEventListener("keydown", function(e) { if (e.key === "Enter") linkBtn.click(); });
+  body.appendChild(titleInput);
+  body.appendChild(urlInput);
+  body.appendChild(linkBtn);
 }
 
 function renderConceptPanel(rightEl, partId, conceptId, tab, color) {
@@ -487,7 +576,14 @@ function renderDiarySection(container) {
 function addMemo(key, text) {
   text = (text || "").trim();
   if (!text) return;
-  studyRef.child("memos/" + key).push({ text: text, createdAt: Date.now() });
+  studyRef.child("memos/" + key).push({ text: text, createdAt: Date.now() })
+    .then(function() {
+      console.log("메모 저장 성공:", key, text);
+    })
+    .catch(function(err) {
+      console.error("메모 저장 실패:", err);
+      alert("저장 실패: " + err.message + "\n\nFirebase 규칙을 확인해주세요.");
+    });
 }
 
 function delMemo(key, id) {
@@ -496,7 +592,14 @@ function delMemo(key, id) {
 }
 
 function addLink(key, title, url) {
-  studyRef.child("links/" + key).push({ title: title, url: url, createdAt: Date.now() });
+  studyRef.child("links/" + key).push({ title: title, url: url, createdAt: Date.now() })
+    .then(function() {
+      console.log("링크 저장 성공:", key, title, url);
+    })
+    .catch(function(err) {
+      console.error("링크 저장 실패:", err);
+      alert("저장 실패: " + err.message + "\n\nFirebase 규칙을 확인해주세요.");
+    });
 }
 
 function delLink(key, id) {
