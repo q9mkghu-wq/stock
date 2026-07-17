@@ -363,31 +363,73 @@ function renderLinkPanel(body, partId, conceptId, color) {
   var key = partId + "-" + conceptId;
   body.innerHTML = "";
 
-  // 링크 목록
+  // 링크 카드 목록 (가로 스크롤)
   var links = studyData.links && studyData.links[key] ? studyData.links[key] : {};
   var linkItems = Object.keys(links).map(function(k) { return Object.assign({ _id: k }, links[k]); })
-    .sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    .sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
 
   if (linkItems.length > 0) {
+    var cardRow = document.createElement("div");
+    cardRow.style.cssText = "display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;";
+
     linkItems.forEach(function(l) {
       var isYt = /youtube\.com|youtu\.be/.test(l.url || "");
-      var a = document.createElement("a");
-      a.className = "cr-link-item";
-      a.href = l.url || "#";
-      a.target = "_blank";
-      a.innerHTML =
-        '<span style="font-size:16px;">' + (isYt ? "▶" : "🔗") + '</span>' +
-        '<span class="cr-link-title">' + (l.title || "").replace(/</g,"&lt;") + '</span>' +
-        '<button onclick="event.preventDefault();delLink(\'' + key + '\',\'' + l._id + '\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;">✕</button>';
-      body.appendChild(a);
+      var ytId = null;
+      if (isYt) {
+        var m = (l.url || "").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+        if (m) ytId = m[1];
+      }
+
+      var card = document.createElement("div");
+      card.style.cssText = "position:relative;width:160px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--bg);flex-shrink:0;";
+
+      // 썸네일 영역
+      var thumb = document.createElement("div");
+      if (ytId) {
+        thumb.style.cssText = "width:100%;height:90px;background:url('https://i.ytimg.com/vi/" + ytId + "/mqdefault.jpg') center/cover no-repeat #000;position:relative;";
+        var playBtn = document.createElement("div");
+        playBtn.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;background:rgba(255,0,0,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;";
+        playBtn.innerHTML = '<span style="color:#fff;font-size:13px;margin-left:3px;">▶</span>';
+        thumb.appendChild(playBtn);
+      } else {
+        // 일반 링크: 파비콘 + 도메인
+        var domain = "";
+        try { domain = new URL(l.url).hostname.replace("www.",""); } catch(e) {}
+        thumb.style.cssText = "width:100%;height:90px;background:linear-gradient(135deg," + color + "22," + color + "44);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;";
+        thumb.innerHTML = '<img src="https://www.google.com/s2/favicons?sz=32&domain=' + encodeURIComponent(l.url) + '" style="width:32px;height:32px;" onerror="this.style.display=\'none\'">' +
+          '<span style="font-size:10px;color:' + color + ';font-weight:700;text-align:center;padding:0 6px;">' + domain + '</span>';
+      }
+
+      // 클릭 시 링크 열기
+      thumb.style.cursor = "pointer";
+      thumb.onclick = function() { window.open(l.url, "_blank"); };
+
+      // 제목
+      var titleEl = document.createElement("div");
+      titleEl.style.cssText = "padding:6px 8px 4px;font-size:11px;font-weight:700;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;cursor:pointer;";
+      titleEl.textContent = l.title || "";
+      titleEl.onclick = function() { window.open(l.url, "_blank"); };
+
+      // 삭제 버튼
+      var delBtn = document.createElement("button");
+      delBtn.textContent = "✕";
+      delBtn.style.cssText = "position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;";
+      delBtn.onclick = function(e) { e.stopPropagation(); delLink(key, l._id); };
+
+      card.appendChild(thumb);
+      card.appendChild(titleEl);
+      card.appendChild(delBtn);
+      cardRow.appendChild(card);
     });
+
+    body.appendChild(cardRow);
   }
 
   // 링크 입력
   var titleInput = document.createElement("input");
   titleInput.type = "text";
   titleInput.placeholder = "링크 제목";
-  titleInput.style.cssText = "width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-top:6px;display:block;";
+  titleInput.style.cssText = "width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-top:4px;display:block;";
   var urlInput = document.createElement("input");
   urlInput.type = "url";
   urlInput.placeholder = "URL (https://...)";
