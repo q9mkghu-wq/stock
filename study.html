@@ -654,35 +654,32 @@ function updateProgress() {
 }
 
 // ===== Firebase 실시간 동기화 =====
+// 초기 렌더링 (Firebase 응답 전에 먼저 표시)
+renderContent();
+
+var firstLoad = true;
 studyRef.on("value", function(snap) {
   studyData = snap.val() || {};
   var comp = studyData.completed || {};
   PARTS.forEach(function(p) { completed[p.id] = !!comp[p.id]; });
   updateProgress();
 
-  // 전체 재렌더링 대신 현재 파트의 각 개념 패널만 부분 업데이트
-  if (activePart === "diary") {
+  if (firstLoad) {
+    // 첫 로드: Firebase 데이터로 전체 다시 그리기
+    firstLoad = false;
     renderContent();
-    return;
+  } else {
+    // 이후: 현재 파트 패널만 부분 업데이트 (입력 중인 내용 보존)
+    if (activePart === "diary") { renderContent(); return; }
+    var part = PARTS.find(function(p) { return p.id === activePart; });
+    if (!part) return;
+    part.concepts.forEach(function(concept) {
+      var memoBody = document.getElementById("memo-body-" + part.id + "-" + concept.id);
+      var linkBody = document.getElementById("link-body-" + part.id + "-" + concept.id);
+      if (memoBody) renderMemoPanel(memoBody, part.id, concept.id);
+      if (linkBody) renderLinkPanel(linkBody, part.id, concept.id, part.color);
+    });
   }
-  var part = PARTS.find(function(p) { return p.id === activePart; });
-  if (!part) return;
-
-  // 완료 버튼만 업데이트
-  var completeBtn = document.querySelector(".complete-btn");
-  if (completeBtn) {
-    completeBtn.className = "complete-btn" + (completed[part.id] ? " done" : "");
-    completeBtn.querySelector(".complete-check").textContent = completed[part.id] ? "✓" : "";
-    completeBtn.childNodes[1].textContent = completed[part.id] ? "✅ 학습 완료!" : "완료 체크";
-  }
-
-  // 각 개념 패널만 업데이트 (재렌더링 없이)
-  part.concepts.forEach(function(concept) {
-    var memoBody = document.getElementById("memo-body-" + part.id + "-" + concept.id);
-    var linkBody = document.getElementById("link-body-" + part.id + "-" + concept.id);
-    if (memoBody) renderMemoPanel(memoBody, part.id, concept.id);
-    if (linkBody) renderLinkPanel(linkBody, part.id, concept.id, part.color);
-  });
 });
 </script>
 </body>
