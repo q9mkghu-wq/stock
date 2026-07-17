@@ -356,15 +356,20 @@ function renderConceptPanel(rightEl, partId, conceptId, tab, color) {
 
     // 메모 입력
     var inputRow = document.createElement("div");
-    inputRow.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+    inputRow.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:8px;";
     var ta = document.createElement("textarea");
     ta.id = "cr-memo-input-" + key;
-    ta.placeholder = "이 개념에 대한 메모를 입력하세요...";
-    ta.style.cssText = "width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;min-height:60px;";
+    ta.placeholder = "이 개념에 대한 메모를 입력하세요... (Ctrl+Enter로 저장)";
+    ta.style.cssText = "width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;min-height:72px;";
     var saveBtn = document.createElement("button");
-    saveBtn.className = "cr-save-btn";
-    saveBtn.textContent = "저장";
-    saveBtn.onclick = function() { addMemo(key, ta.value); ta.value = ""; };
+    saveBtn.textContent = "💾 메모 저장";
+    saveBtn.style.cssText = "width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;";
+    saveBtn.onclick = function() {
+      var text = ta.value.trim();
+      if (!text) { alert("메모 내용을 입력해주세요."); return; }
+      addMemo(key, text);
+      ta.value = "";
+    };
     ta.addEventListener("keydown", function(e) { if (e.ctrlKey && e.key === "Enter") saveBtn.click(); });
     inputRow.appendChild(ta);
     inputRow.appendChild(saveBtn);
@@ -397,31 +402,34 @@ function renderConceptPanel(rightEl, partId, conceptId, tab, color) {
     }
 
     // 링크 입력
+    var linkInputWrap = document.createElement("div");
+    linkInputWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;margin-top:8px;";
     var titleInput = document.createElement("input");
     titleInput.type = "text";
     titleInput.id = "cr-link-title-" + key;
-    titleInput.placeholder = "링크 제목";
-    titleInput.style.cssText = "width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:5px;";
+    titleInput.placeholder = "링크 제목 (예: PER 완전 정복 강의)";
+    titleInput.style.cssText = "width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;";
     var urlInput = document.createElement("input");
     urlInput.type = "url";
     urlInput.id = "cr-link-url-" + key;
     urlInput.placeholder = "URL (https://...)";
-    urlInput.style.cssText = "width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:5px;";
+    urlInput.style.cssText = "width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;";
     var linkSaveBtn = document.createElement("button");
-    linkSaveBtn.className = "cr-save-btn";
-    linkSaveBtn.textContent = "+ 추가";
-    linkSaveBtn.style.cssText = "width:100%;padding:8px;background:" + color + ";color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;";
+    linkSaveBtn.textContent = "🔗 링크 저장";
+    linkSaveBtn.style.cssText = "width:100%;padding:11px;background:#457B9D;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;";
     linkSaveBtn.onclick = function() {
       var t = titleInput.value.trim();
       var u = urlInput.value.trim();
-      if (!t || !u) { alert("제목과 URL을 입력해주세요."); return; }
+      if (!t || !u) { alert("제목과 URL을 모두 입력해주세요."); return; }
       if (!u.startsWith("http")) u = "https://" + u;
       addLink(key, t, u);
       titleInput.value = ""; urlInput.value = "";
     };
-    body.appendChild(titleInput);
-    body.appendChild(urlInput);
-    body.appendChild(linkSaveBtn);
+    urlInput.addEventListener("keydown", function(e) { if (e.key === "Enter") linkSaveBtn.click(); });
+    linkInputWrap.appendChild(titleInput);
+    linkInputWrap.appendChild(urlInput);
+    linkInputWrap.appendChild(linkSaveBtn);
+    body.appendChild(linkInputWrap);
   }
 }
 
