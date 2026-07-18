@@ -462,16 +462,26 @@ function renderLinkPanel(body, partId, conceptId, color) {
   var key = partId + "-" + conceptId;
   body.innerHTML = "";
 
-  // 링크 카드 목록 (가로 스크롤)
   var links = studyData.links && studyData.links[key] ? studyData.links[key] : {};
-  var linkItems = Object.keys(links).map(function(k) { return Object.assign({ _id: k }, links[k]); })
-    .sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  // linkOrder 적용
+  var linkOrder = studyData.linkOrder && studyData.linkOrder[key] ? studyData.linkOrder[key] : null;
+  var linkItems = Object.keys(links).map(function(k) { return Object.assign({ _id: k }, links[k]); });
+
+  if (linkOrder) {
+    linkItems.sort(function(a, b) {
+      var ai = linkOrder.indexOf(a._id); var bi = linkOrder.indexOf(b._id);
+      if (ai === -1) ai = 9999; if (bi === -1) bi = 9999;
+      return ai - bi;
+    });
+  } else {
+    linkItems.sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  }
 
   if (linkItems.length > 0) {
     var cardRow = document.createElement("div");
     cardRow.style.cssText = "display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;";
 
-    linkItems.forEach(function(l) {
+    linkItems.forEach(function(l, lIdx) {
       var isYt = /youtube\.com|youtu\.be/.test(l.url || "");
       var ytId = null;
       if (isYt) {
@@ -485,38 +495,60 @@ function renderLinkPanel(body, partId, conceptId, color) {
       // 썸네일 영역
       var thumb = document.createElement("div");
       if (ytId) {
-        thumb.style.cssText = "width:100%;height:90px;background:url('https://i.ytimg.com/vi/" + ytId + "/mqdefault.jpg') center/cover no-repeat #000;position:relative;";
+        thumb.style.cssText = "width:100%;height:90px;background:url('https://i.ytimg.com/vi/" + ytId + "/mqdefault.jpg') center/cover no-repeat #000;position:relative;cursor:pointer;";
         var playBtn = document.createElement("div");
-        playBtn.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;background:rgba(255,0,0,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;";
+        playBtn.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;background:rgba(255,0,0,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;";
         playBtn.innerHTML = '<span style="color:#fff;font-size:13px;margin-left:3px;">▶</span>';
         thumb.appendChild(playBtn);
       } else {
-        // 일반 링크: 파비콘 + 도메인
         var domain = "";
         try { domain = new URL(l.url).hostname.replace("www.",""); } catch(e) {}
-        thumb.style.cssText = "width:100%;height:90px;background:linear-gradient(135deg," + color + "22," + color + "44);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;";
+        thumb.style.cssText = "width:100%;height:90px;background:linear-gradient(135deg," + color + "22," + color + "44);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;";
         thumb.innerHTML = '<img src="https://www.google.com/s2/favicons?sz=32&domain=' + encodeURIComponent(l.url) + '" style="width:32px;height:32px;" onerror="this.style.display=\'none\'">' +
           '<span style="font-size:10px;color:' + color + ';font-weight:700;text-align:center;padding:0 6px;">' + domain + '</span>';
       }
-
-      // 클릭 시 링크 열기
-      thumb.style.cursor = "pointer";
       thumb.onclick = function() { window.open(l.url, "_blank"); };
 
       // 제목
       var titleEl = document.createElement("div");
-      titleEl.style.cssText = "padding:6px 8px 4px;font-size:11px;font-weight:700;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;cursor:pointer;";
+      titleEl.style.cssText = "padding:5px 8px 2px;font-size:11px;font-weight:700;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4;cursor:pointer;";
       titleEl.textContent = l.title || "";
       titleEl.onclick = function() { window.open(l.url, "_blank"); };
 
-      // 삭제 버튼
+      // 하단: ← → 버튼
+      var btnRow = document.createElement("div");
+      btnRow.style.cssText = "display:flex;justify-content:space-between;padding:2px 4px 4px;gap:2px;";
+
+      var lBtn = document.createElement("button");
+      lBtn.textContent = "←";
+      lBtn.style.cssText = "flex:1;padding:3px;border:1px solid var(--border);border-radius:5px;background:none;font-size:11px;cursor:pointer;" + (lIdx === 0 ? "opacity:0.3;" : "");
+      lBtn.disabled = lIdx === 0;
+      lBtn.onclick = (function(items, i, k2) { return function(e) {
+        e.stopPropagation();
+        moveLinkOrder(k2, items, i, -1, partId, conceptId, color);
+      }; })(linkItems, lIdx, key);
+
+      var rBtn = document.createElement("button");
+      rBtn.textContent = "→";
+      rBtn.style.cssText = "flex:1;padding:3px;border:1px solid var(--border);border-radius:5px;background:none;font-size:11px;cursor:pointer;" + (lIdx === linkItems.length-1 ? "opacity:0.3;" : "");
+      rBtn.disabled = lIdx === linkItems.length - 1;
+      rBtn.onclick = (function(items, i, k2) { return function(e) {
+        e.stopPropagation();
+        moveLinkOrder(k2, items, i, 1, partId, conceptId, color);
+      }; })(linkItems, lIdx, key);
+
+      btnRow.appendChild(lBtn);
+      btnRow.appendChild(rBtn);
+
+      // ✕ 삭제
       var delBtn = document.createElement("button");
       delBtn.textContent = "✕";
-      delBtn.style.cssText = "position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;";
-      delBtn.onclick = function(e) { e.stopPropagation(); delLink(key, l._id); };
+      delBtn.style.cssText = "position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;padding:0;line-height:1;";
+      delBtn.onclick = (function(id){ return function(e) { e.stopPropagation(); delLink(key, id); }; })(l._id);
 
       card.appendChild(thumb);
       card.appendChild(titleEl);
+      card.appendChild(btnRow);
       card.appendChild(delBtn);
       cardRow.appendChild(card);
     });
@@ -714,6 +746,19 @@ function renderDiarySection(container) {
 }
 
 // ===== Firebase CRUD =====
+function moveLinkOrder(key, items, idx, dir, partId, conceptId, color) {
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= items.length) return;
+  var ids = items.map(function(l) { return l._id; });
+  var tmp = ids[idx]; ids[idx] = ids[newIdx]; ids[newIdx] = tmp;
+  if (!studyData.linkOrder) studyData.linkOrder = {};
+  studyData.linkOrder[key] = ids;
+  studyRef.child("linkOrder/" + key.replace("-","_")).set(ids);
+  // 즉시 화면 업데이트
+  var body = document.getElementById("link-body-" + key);
+  if (body) renderLinkPanel(body, partId, conceptId, color);
+}
+
 function moveConceptOrder(partId, idx, dir) {
   var part = PARTS.find(function(p) { return p.id === partId; });
   if (!part) return;
@@ -862,6 +907,14 @@ renderContent();
 var firstLoad = true;
 studyRef.on("value", function(snap) {
   studyData = snap.val() || {};
+  // linkOrder 키 복원 (Firebase에서 -를 _로 저장)
+  if (studyData.linkOrder) {
+    var fixedOrder = {};
+    Object.keys(studyData.linkOrder).forEach(function(k) {
+      fixedOrder[k.replace("_","-")] = studyData.linkOrder[k];
+    });
+    studyData.linkOrder = fixedOrder;
+  }
   var comp = studyData.completed || {};
   PARTS.forEach(function(p) { completed[p.id] = !!comp[p.id]; });
   updateProgress();
