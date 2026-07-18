@@ -269,12 +269,51 @@ function renderContent() {
   divider.innerHTML = '📖 핵심 개념';
   container.appendChild(divider);
 
-  part.concepts.forEach(function(concept) {
-    renderConceptRow(container, part.id, concept, part.color);
+  // 파트별 커스텀 개념 (Firebase에서 로드)
+  var customConcepts = [];
+  if (studyData.customConcepts && studyData.customConcepts[part.id]) {
+    var cc = studyData.customConcepts[part.id];
+    customConcepts = Object.keys(cc).map(function(k) {
+      return Object.assign({ _id: k, id: "custom-" + k }, cc[k]);
+    }).sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  }
+
+  var allConcepts = part.concepts.concat(customConcepts);
+  allConcepts.forEach(function(concept) {
+    renderConceptRow(container, part.id, concept, part.color, !!concept._id);
   });
+
+  // 개념 추가 폼
+  var addConceptBox = document.createElement("div");
+  addConceptBox.style.cssText = "margin-top:16px;";
+
+  var addConceptForm = document.createElement("div");
+  addConceptForm.id = "concept-add-form-" + part.id;
+  addConceptForm.style.cssText = "display:none;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;";
+  addConceptForm.innerHTML =
+    '<div style="font-size:14px;font-weight:800;margin-bottom:10px;color:' + part.color + ';">+ 새 핵심 개념 추가</div>' +
+    '<input type="text" id="new-concept-term-' + part.id + '" placeholder="개념명 (예: BPS 주당순자산)" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:8px;">' +
+    '<textarea id="new-concept-def-' + part.id + '" placeholder="개념 설명" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;min-height:70px;resize:vertical;margin-bottom:8px;font-family:inherit;"></textarea>' +
+    '<textarea id="new-concept-ex-' + part.id + '" placeholder="💡 예시 또는 팁 (선택)" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;min-height:60px;resize:vertical;margin-bottom:10px;font-family:inherit;"></textarea>' +
+    '<div style="display:flex;gap:8px;">' +
+      '<button onclick="addCustomConcept(\'' + part.id + '\')" style="flex:1;padding:11px;background:' + part.color + ';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:800;cursor:pointer;">+ 추가</button>' +
+      '<button onclick="document.getElementById(\'concept-add-form-' + part.id + '\').style.display=\'none\'" style="padding:11px 16px;border:1px solid var(--border);border-radius:8px;background:none;cursor:pointer;">취소</button>' +
+    '</div>';
+
+  var addConceptBtn = document.createElement("button");
+  addConceptBtn.textContent = "+ 핵심 개념 추가";
+  addConceptBtn.style.cssText = "width:100%;padding:12px;border:1.5px dashed var(--border);border-radius:10px;background:none;color:" + part.color + ";font-size:14px;font-weight:700;cursor:pointer;";
+  addConceptBtn.onclick = function() {
+    var form = document.getElementById("concept-add-form-" + part.id);
+    form.style.display = form.style.display === "none" ? "block" : "none";
+  };
+
+  addConceptBox.appendChild(addConceptForm);
+  addConceptBox.appendChild(addConceptBtn);
+  container.appendChild(addConceptBox);
 }
 
-function renderConceptRow(container, partId, concept, color) {
+function renderConceptRow(container, partId, concept, color, isCustom) {
   var row = document.createElement("div");
   row.className = "concept-row";
   row.id = "row-" + partId + "-" + concept.id;
@@ -283,17 +322,38 @@ function renderConceptRow(container, partId, concept, color) {
   var card = document.createElement("div");
   card.className = "concept-card";
   card.style.borderTop = "3px solid " + color;
-  card.innerHTML =
-    '<div class="concept-term" style="color:' + color + ';">' + concept.term + '</div>' +
-    '<div class="concept-def">' + concept.def + '</div>' +
-    '<div class="concept-example">' + concept.example + '</div>';
+
+  var termRow = document.createElement("div");
+  termRow.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;gap:8px;";
+  var termEl = document.createElement("div");
+  termEl.className = "concept-term";
+  termEl.style.color = color;
+  termEl.textContent = concept.term;
+  termRow.appendChild(termEl);
+
+  // 커스텀 개념만 삭제 버튼
+  if (isCustom) {
+    var delConceptBtn = document.createElement("button");
+    delConceptBtn.textContent = "✕";
+    delConceptBtn.style.cssText = "background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;flex-shrink:0;padding:0;";
+    delConceptBtn.title = "이 개념 삭제";
+    delConceptBtn.onclick = function() {
+      if (!confirm("'" + concept.term + "' 개념을 삭제하시겠습니까?")) return;
+      var firebaseId = concept._id;
+      studyRef.child("customConcepts/" + partId + "/" + firebaseId).remove();
+    };
+    termRow.appendChild(delConceptBtn);
+  }
+
+  card.appendChild(termRow);
+  card.innerHTML += '<div class="concept-def">' + (concept.def || "") + '</div>' +
+    (concept.example ? '<div class="concept-example">' + concept.example + '</div>' : "");
 
   // 가운데: 메모 패널
   var memoPanel = document.createElement("div");
   memoPanel.className = "concept-right";
   memoPanel.id = "memo-panel-" + partId + "-" + concept.id;
   memoPanel.innerHTML = '<div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--border);">📝 메모</div>';
-
   var memoBody = document.createElement("div");
   memoBody.id = "memo-body-" + partId + "-" + concept.id;
   memoPanel.appendChild(memoBody);
@@ -303,7 +363,6 @@ function renderConceptRow(container, partId, concept, color) {
   linkPanel.className = "concept-right";
   linkPanel.id = "link-panel-" + partId + "-" + concept.id;
   linkPanel.innerHTML = '<div style="font-size:13px;font-weight:800;color:#457B9D;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--border);">🔗 참고 링크</div>';
-
   var linkBody = document.createElement("div");
   linkBody.id = "link-body-" + partId + "-" + concept.id;
   linkPanel.appendChild(linkBody);
@@ -313,7 +372,6 @@ function renderConceptRow(container, partId, concept, color) {
   row.appendChild(linkPanel);
   container.appendChild(row);
 
-  // 초기 렌더
   renderMemoPanel(memoBody, partId, concept.id);
   renderLinkPanel(linkBody, partId, concept.id, color);
 }
@@ -615,6 +673,26 @@ function renderDiarySection(container) {
 }
 
 // ===== Firebase CRUD =====
+function addCustomConcept(partId) {
+  var term = document.getElementById("new-concept-term-" + partId).value.trim();
+  var def = document.getElementById("new-concept-def-" + partId).value.trim();
+  var ex = document.getElementById("new-concept-ex-" + partId).value.trim();
+  if (!term || !def) { alert("개념명과 설명을 입력해주세요."); return; }
+  var newRef = studyRef.child("customConcepts/" + partId).push();
+  var newItem = { term: term, def: def, example: ex ? "💡 " + ex : "", createdAt: Date.now() };
+  // 로컬 즉시 반영
+  if (!studyData.customConcepts) studyData.customConcepts = {};
+  if (!studyData.customConcepts[partId]) studyData.customConcepts[partId] = {};
+  studyData.customConcepts[partId][newRef.key] = newItem;
+  newRef.set(newItem);
+  // 폼 초기화 & 닫기
+  document.getElementById("new-concept-term-" + partId).value = "";
+  document.getElementById("new-concept-def-" + partId).value = "";
+  document.getElementById("new-concept-ex-" + partId).value = "";
+  document.getElementById("concept-add-form-" + partId).style.display = "none";
+  renderContent();
+}
+
 function addMemo(key, text) {
   text = (text || "").trim();
   if (!text) return;
