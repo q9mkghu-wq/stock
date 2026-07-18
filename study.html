@@ -278,9 +278,22 @@ function renderContent() {
     }).sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
   }
 
-  var allConcepts = part.concepts.concat(customConcepts);
-  allConcepts.forEach(function(concept) {
-    renderConceptRow(container, part.id, concept, part.color, !!concept._id);
+  // 기본 개념에 order 부여 (없으면 index 기준)
+  var conceptOrder = studyData.conceptOrder && studyData.conceptOrder[part.id]
+    ? studyData.conceptOrder[part.id] : null;
+
+  var allConcepts = part.concepts.map(function(c, i) {
+    return Object.assign({}, c, { _order: conceptOrder ? (conceptOrder.indexOf(c.id) !== -1 ? conceptOrder.indexOf(c.id) : i) : i, _isBuiltin: true });
+  }).concat(customConcepts.map(function(c, i) {
+    var orderIdx = conceptOrder ? conceptOrder.indexOf(c.id) : -1;
+    return Object.assign({}, c, { _order: orderIdx !== -1 ? orderIdx : 9999 + i });
+  }));
+
+  // order 기준 정렬
+  allConcepts.sort(function(a, b) { return a._order - b._order; });
+
+  allConcepts.forEach(function(concept, idx) {
+    renderConceptRow(container, part.id, concept, part.color, !concept._isBuiltin, idx, allConcepts.length);
   });
 
   // 개념 추가 폼
@@ -313,7 +326,7 @@ function renderContent() {
   container.appendChild(addConceptBox);
 }
 
-function renderConceptRow(container, partId, concept, color, isCustom) {
+function renderConceptRow(container, partId, concept, color, isCustom, idx, total) {
   var row = document.createElement("div");
   row.className = "concept-row";
   row.id = "row-" + partId + "-" + concept.id;
@@ -323,31 +336,58 @@ function renderConceptRow(container, partId, concept, color, isCustom) {
   card.className = "concept-card";
   card.style.borderTop = "3px solid " + color;
 
+  // 제목 + ↑↓ 버튼
   var termRow = document.createElement("div");
-  termRow.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;gap:8px;";
+  termRow.style.cssText = "display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:6px;";
   var termEl = document.createElement("div");
   termEl.className = "concept-term";
-  termEl.style.color = color;
+  termEl.style.cssText = "color:" + color + ";flex:1;margin-bottom:0;";
   termEl.textContent = concept.term;
   termRow.appendChild(termEl);
 
-  // 커스텀 개념만 삭제 버튼
+  var moveWrap = document.createElement("div");
+  moveWrap.style.cssText = "display:flex;gap:3px;flex-shrink:0;";
+
+  var upBtn = document.createElement("button");
+  upBtn.textContent = "↑";
+  upBtn.style.cssText = "padding:2px 7px;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer;font-size:12px;" + (idx === 0 ? "opacity:0.3;" : "");
+  upBtn.disabled = idx === 0;
+  upBtn.onclick = (function(i){ return function(){ moveConceptOrder(partId, i, -1); }; })(idx);
+
+  var downBtn = document.createElement("button");
+  downBtn.textContent = "↓";
+  downBtn.style.cssText = "padding:2px 7px;border:1px solid var(--border);border-radius:5px;background:none;cursor:pointer;font-size:12px;" + (idx === total-1 ? "opacity:0.3;" : "");
+  downBtn.disabled = idx === total - 1;
+  downBtn.onclick = (function(i){ return function(){ moveConceptOrder(partId, i, 1); }; })(idx);
+
+  moveWrap.appendChild(upBtn);
+  moveWrap.appendChild(downBtn);
+
   if (isCustom) {
-    var delConceptBtn = document.createElement("button");
-    delConceptBtn.textContent = "✕";
-    delConceptBtn.style.cssText = "background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;flex-shrink:0;padding:0;";
-    delConceptBtn.title = "이 개념 삭제";
-    delConceptBtn.onclick = function() {
-      if (!confirm("'" + concept.term + "' 개념을 삭제하시겠습니까?")) return;
-      var firebaseId = concept._id;
-      studyRef.child("customConcepts/" + partId + "/" + firebaseId).remove();
-    };
-    termRow.appendChild(delConceptBtn);
+    var delBtn2 = document.createElement("button");
+    delBtn2.textContent = "✕";
+    delBtn2.style.cssText = "padding:2px 6px;border:1px solid #eee;border-radius:5px;background:none;color:#ccc;cursor:pointer;font-size:12px;";
+    delBtn2.onclick = (function(c){ return function() {
+      if (!confirm("'" + c.term + "' 개념을 삭제하시겠습니까?")) return;
+      studyRef.child("customConcepts/" + partId + "/" + c._id).remove();
+    }; })(concept);
+    moveWrap.appendChild(delBtn2);
   }
 
+  termRow.appendChild(moveWrap);
   card.appendChild(termRow);
-  card.innerHTML += '<div class="concept-def">' + (concept.def || "") + '</div>' +
-    (concept.example ? '<div class="concept-example">' + concept.example + '</div>' : "");
+
+  var defEl = document.createElement("div");
+  defEl.className = "concept-def";
+  defEl.textContent = concept.def || "";
+  card.appendChild(defEl);
+
+  if (concept.example) {
+    var exEl = document.createElement("div");
+    exEl.className = "concept-example";
+    exEl.textContent = concept.example;
+    card.appendChild(exEl);
+  }
 
   // 가운데: 메모 패널
   var memoPanel = document.createElement("div");
@@ -375,6 +415,7 @@ function renderConceptRow(container, partId, concept, color, isCustom) {
   renderMemoPanel(memoBody, partId, concept.id);
   renderLinkPanel(linkBody, partId, concept.id, color);
 }
+
 
 function renderMemoPanel(body, partId, conceptId) {
   var key = partId + "-" + conceptId;
@@ -673,6 +714,47 @@ function renderDiarySection(container) {
 }
 
 // ===== Firebase CRUD =====
+function moveConceptOrder(partId, idx, dir) {
+  var part = PARTS.find(function(p) { return p.id === partId; });
+  if (!part) return;
+
+  // 현재 순서 배열 구성
+  var customConcepts = [];
+  if (studyData.customConcepts && studyData.customConcepts[partId]) {
+    var cc = studyData.customConcepts[partId];
+    customConcepts = Object.keys(cc).map(function(k) {
+      return Object.assign({ _id: k, id: "custom-" + k }, cc[k]);
+    }).sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  }
+
+  var conceptOrder = studyData.conceptOrder && studyData.conceptOrder[partId]
+    ? studyData.conceptOrder[partId].slice() : null;
+
+  var allIds = [];
+  if (conceptOrder) {
+    allIds = conceptOrder;
+  } else {
+    allIds = part.concepts.map(function(c) { return c.id; })
+      .concat(customConcepts.map(function(c) { return c.id; }));
+  }
+
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= allIds.length) return;
+
+  // 스왑
+  var tmp = allIds[idx];
+  allIds[idx] = allIds[newIdx];
+  allIds[newIdx] = tmp;
+
+  // Firebase 저장
+  if (!studyData.conceptOrder) studyData.conceptOrder = {};
+  studyData.conceptOrder[partId] = allIds;
+  studyRef.child("conceptOrder/" + partId).set(allIds);
+
+  // 즉시 재렌더링
+  renderContent();
+}
+
 function addCustomConcept(partId) {
   var term = document.getElementById("new-concept-term-" + partId).value.trim();
   var def = document.getElementById("new-concept-def-" + partId).value.trim();
