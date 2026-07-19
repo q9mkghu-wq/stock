@@ -120,6 +120,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR
   <div class="progress-text" id="progress-text">0 / 5 완료</div>
 </div>
 
+<!-- 공부 채널 링크바 -->
+<div id="channel-bar" style="background:#fff;border-bottom:2px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:10px;overflow-x:auto;flex-wrap:nowrap;">
+  <span style="font-size:13px;font-weight:800;color:var(--sub);white-space:nowrap;flex-shrink:0;">📺 공부 채널</span>
+
+  <!-- 채널 카드 목록 -->
+  <div id="channel-list" style="display:flex;gap:8px;align-items:center;"></div>
+
+  <!-- 추가 버튼 -->
+  <button id="channel-add-toggle" style="flex-shrink:0;padding:6px 12px;border:1.5px dashed var(--border);border-radius:20px;background:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">+ 채널 추가</button>
+</div>
+
+<!-- 채널 추가 폼 (숨김) -->
+<div id="channel-add-form" style="display:none;background:#fff;border-bottom:2px solid var(--border);padding:10px 20px;gap:8px;align-items:center;flex-wrap:wrap;">
+  <input type="text" id="channel-name-input" placeholder="채널명 (예: 이선엽)" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:160px;">
+  <input type="url" id="channel-url-input" placeholder="URL (https://...)" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:260px;">
+  <button id="channel-add-submit" style="padding:7px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">추가</button>
+  <button id="channel-add-cancel" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:none;font-size:13px;cursor:pointer;">취소</button>
+</div>
+
 <div class="tab-bar" id="tab-bar">
   <button class="tab-btn active" data-part="basic">📊 기본 지식</button>
   <button class="tab-btn" data-part="macro">🌍 거시경제</button>
@@ -144,6 +163,86 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 var studyRef = db.ref("studyNote2");
+
+// ===== 공부 채널 링크바 JS =====
+var channelRef = studyRef.child("channels");
+var channelColors = ["#C9572E","#457B9D","#2A9D8F","#6D6875","#E63946","#264653","#F4A261","#1D3557"];
+
+function renderChannelBar(channels) {
+  var list = document.getElementById("channel-list");
+  if (!list) return;
+  list.innerHTML = "";
+
+  channels.forEach(function(ch, idx) {
+    var color = channelColors[idx % channelColors.length];
+    var isYt = /youtube\.com|youtu\.be/.test(ch.url || "");
+
+    var card = document.createElement("div");
+    card.style.cssText = "display:flex;align-items:center;gap:6px;padding:5px 12px;background:" + color + "18;border:1.5px solid " + color + "55;border-radius:20px;flex-shrink:0;";
+
+    // 파비콘
+    var favicon = document.createElement("img");
+    favicon.src = isYt
+      ? "https://www.youtube.com/favicon.ico"
+      : "https://www.google.com/s2/favicons?sz=16&domain=" + encodeURIComponent(ch.url || "");
+    favicon.style.cssText = "width:14px;height:14px;border-radius:2px;flex-shrink:0;";
+    favicon.onerror = function() { this.style.display="none"; };
+
+    // 채널명 (클릭 → 링크 열기)
+    var nameEl = document.createElement("a");
+    nameEl.href = ch.url || "#";
+    nameEl.target = "_blank";
+    nameEl.style.cssText = "font-size:13px;font-weight:700;color:" + color + ";text-decoration:none;white-space:nowrap;";
+    nameEl.textContent = ch.name || "";
+
+    // 삭제 버튼
+    var delBtn = document.createElement("button");
+    delBtn.textContent = "✕";
+    delBtn.style.cssText = "background:none;border:none;color:" + color + ";opacity:0.5;cursor:pointer;font-size:11px;padding:0;line-height:1;flex-shrink:0;";
+    delBtn.onclick = function() {
+      if (!confirm("'" + ch.name + "' 채널을 삭제하시겠습니까?")) return;
+      channelRef.child(ch._id).remove();
+    };
+
+    card.appendChild(favicon);
+    card.appendChild(nameEl);
+    card.appendChild(delBtn);
+    list.appendChild(card);
+  });
+}
+
+// Firebase 채널 로드
+var channelData = [];
+channelRef.on("value", function(snap) {
+  var val = snap.val() || {};
+  channelData = Object.keys(val).map(function(k) {
+    return Object.assign({ _id: k }, val[k]);
+  }).sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  renderChannelBar(channelData);
+});
+
+// 채널 추가 토글
+document.getElementById("channel-add-toggle").onclick = function() {
+  var form = document.getElementById("channel-add-form");
+  var isOpen = form.style.display !== "none";
+  form.style.display = isOpen ? "none" : "flex";
+};
+document.getElementById("channel-add-cancel").onclick = function() {
+  document.getElementById("channel-add-form").style.display = "none";
+};
+document.getElementById("channel-add-submit").onclick = function() {
+  var name = document.getElementById("channel-name-input").value.trim();
+  var url = document.getElementById("channel-url-input").value.trim();
+  if (!name || !url) { alert("채널명과 URL을 입력해주세요."); return; }
+  if (!url.startsWith("http")) url = "https://" + url;
+  channelRef.push({ name: name, url: url, createdAt: Date.now() });
+  document.getElementById("channel-name-input").value = "";
+  document.getElementById("channel-url-input").value = "";
+  document.getElementById("channel-add-form").style.display = "none";
+};
+document.getElementById("channel-url-input").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") document.getElementById("channel-add-submit").click();
+});
 
 // ===== 공부 데이터 =====
 var PARTS = [
