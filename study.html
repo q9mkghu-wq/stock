@@ -121,13 +121,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR
 </div>
 
 <!-- 공부 채널 링크바 -->
-<div id="channel-bar" style="background:#fff;border-bottom:2px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:10px;overflow-x:auto;flex-wrap:nowrap;">
+<div id="channel-bar" style="background:#fff;border-bottom:2px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
   <span style="font-size:13px;font-weight:800;color:var(--sub);white-space:nowrap;flex-shrink:0;">📺 공부 채널</span>
-
-  <!-- 채널 카드 목록 -->
-  <div id="channel-list" style="display:flex;gap:8px;align-items:center;"></div>
-
-  <!-- 추가 버튼 -->
+  <div id="channel-list" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1;"></div>
   <button id="channel-add-toggle" style="flex-shrink:0;padding:6px 12px;border:1.5px dashed var(--border);border-radius:20px;background:none;color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">+ 채널 추가</button>
 </div>
 
