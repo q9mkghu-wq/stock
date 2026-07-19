@@ -760,10 +760,11 @@ function moveLinkOrder(key, items, idx, dir, partId, conceptId, color) {
 }
 
 function moveConceptOrder(partId, idx, dir) {
+  var newIdx = idx + dir;
+  // 현재 화면에 보이는 순서 그대로 ID 배열 추출
   var part = PARTS.find(function(p) { return p.id === partId; });
   if (!part) return;
 
-  // 현재 순서 배열 구성
   var customConcepts = [];
   if (studyData.customConcepts && studyData.customConcepts[partId]) {
     var cc = studyData.customConcepts[partId];
@@ -775,15 +776,17 @@ function moveConceptOrder(partId, idx, dir) {
   var conceptOrder = studyData.conceptOrder && studyData.conceptOrder[partId]
     ? studyData.conceptOrder[partId].slice() : null;
 
-  var allIds = [];
-  if (conceptOrder) {
-    allIds = conceptOrder;
-  } else {
-    allIds = part.concepts.map(function(c) { return c.id; })
-      .concat(customConcepts.map(function(c) { return c.id; }));
-  }
+  // 현재 화면 순서대로 ID 배열 구성
+  var allConcepts = part.concepts.map(function(c, i) {
+    var orderIdx = conceptOrder ? conceptOrder.indexOf(c.id) : i;
+    return { id: c.id, _order: orderIdx !== -1 ? orderIdx : i };
+  }).concat(customConcepts.map(function(c, i) {
+    var orderIdx = conceptOrder ? conceptOrder.indexOf(c.id) : -1;
+    return { id: c.id, _order: orderIdx !== -1 ? orderIdx : 9999 + i };
+  }));
+  allConcepts.sort(function(a, b) { return a._order - b._order; });
 
-  var newIdx = idx + dir;
+  var allIds = allConcepts.map(function(c) { return c.id; });
   if (newIdx < 0 || newIdx >= allIds.length) return;
 
   // 스왑
@@ -791,12 +794,11 @@ function moveConceptOrder(partId, idx, dir) {
   allIds[idx] = allIds[newIdx];
   allIds[newIdx] = tmp;
 
-  // Firebase 저장
+  // 저장
   if (!studyData.conceptOrder) studyData.conceptOrder = {};
   studyData.conceptOrder[partId] = allIds;
   studyRef.child("conceptOrder/" + partId).set(allIds);
 
-  // 즉시 재렌더링
   renderContent();
 }
 
@@ -805,13 +807,27 @@ function addCustomConcept(partId) {
   var def = document.getElementById("new-concept-def-" + partId).value.trim();
   var ex = document.getElementById("new-concept-ex-" + partId).value.trim();
   if (!term || !def) { alert("개념명과 설명을 입력해주세요."); return; }
+
   var newRef = studyRef.child("customConcepts/" + partId).push();
+  var newId = "custom-" + newRef.key;
   var newItem = { term: term, def: def, example: ex ? "💡 " + ex : "", createdAt: Date.now() };
+
   // 로컬 즉시 반영
   if (!studyData.customConcepts) studyData.customConcepts = {};
   if (!studyData.customConcepts[partId]) studyData.customConcepts[partId] = {};
   studyData.customConcepts[partId][newRef.key] = newItem;
   newRef.set(newItem);
+
+  // conceptOrder에 새 ID 추가
+  var part = PARTS.find(function(p) { return p.id === partId; });
+  var existingOrder = studyData.conceptOrder && studyData.conceptOrder[partId]
+    ? studyData.conceptOrder[partId].slice()
+    : part ? part.concepts.map(function(c) { return c.id; }) : [];
+  existingOrder.push(newId);
+  if (!studyData.conceptOrder) studyData.conceptOrder = {};
+  studyData.conceptOrder[partId] = existingOrder;
+  studyRef.child("conceptOrder/" + partId).set(existingOrder);
+
   // 폼 초기화 & 닫기
   document.getElementById("new-concept-term-" + partId).value = "";
   document.getElementById("new-concept-def-" + partId).value = "";
