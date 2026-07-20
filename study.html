@@ -147,6 +147,25 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR
   <a href="https://www.genspark.ai" target="_blank" style="padding:7px 16px;background:#FF6B2B;color:#fff;border-radius:20px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap;">⚡ Genspark</a>
 </div>
 
+<!-- 반복 시청 유튜브 링크 -->
+<div id="yt-bar" style="background:#fff;border-bottom:2px solid var(--border);padding:10px 20px;">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+    <span style="font-size:13px;font-weight:800;color:var(--sub);white-space:nowrap;">🔁 반복 시청 영상</span>
+    <button id="yt-bar-add-toggle" style="padding:5px 12px;border:1.5px dashed var(--border);border-radius:20px;background:none;color:#E63946;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">+ 영상 추가</button>
+  </div>
+
+  <!-- 추가 폼 -->
+  <div id="yt-bar-form" style="display:none;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+    <input type="text" id="yt-bar-title" placeholder="영상 제목" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:200px;">
+    <input type="url" id="yt-bar-url" placeholder="유튜브 URL" style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:280px;">
+    <button id="yt-bar-submit" style="padding:7px 16px;background:#E63946;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">추가</button>
+    <button id="yt-bar-cancel" style="padding:7px 12px;border:1px solid var(--border);border-radius:8px;background:none;font-size:13px;cursor:pointer;">취소</button>
+  </div>
+
+  <!-- 썸네일 카드 목록 -->
+  <div id="yt-bar-list" style="display:flex;flex-wrap:wrap;gap:12px;"></div>
+</div>
+
 <div class="tab-bar" id="tab-bar">
   <button class="tab-btn active" data-part="basic">📊 기본 지식</button>
   <button class="tab-btn" data-part="macro">🌍 거시경제</button>
@@ -171,6 +190,98 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var db = firebase.database();
 var studyRef = db.ref("studyNote2");
+
+// ===== 반복 시청 유튜브 JS =====
+var ytBarRef = studyRef.child("repeatYt");
+
+function getYtId(url) {
+  var m = (url || "").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function renderYtBar(items) {
+  var list = document.getElementById("yt-bar-list");
+  if (!list) return;
+  list.innerHTML = "";
+
+  if (items.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--sub);padding:4px 0;">아직 추가된 영상이 없어요. 자주 보고 싶은 강의를 추가해보세요!</div>';
+    return;
+  }
+
+  items.forEach(function(item) {
+    var ytId = getYtId(item.url);
+
+    var card = document.createElement("div");
+    card.style.cssText = "position:relative;width:180px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg);flex-shrink:0;cursor:pointer;";
+
+    // 썸네일
+    var thumb = document.createElement("div");
+    if (ytId) {
+      thumb.style.cssText = "width:100%;height:100px;background:url('https://i.ytimg.com/vi/" + ytId + "/mqdefault.jpg') center/cover no-repeat #000;position:relative;";
+      var play = document.createElement("div");
+      play.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;background:rgba(255,0,0,0.85);border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;";
+      play.innerHTML = '<span style="color:#fff;font-size:15px;margin-left:3px;">▶</span>';
+      thumb.appendChild(play);
+    } else {
+      thumb.style.cssText = "width:100%;height:100px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;";
+      thumb.innerHTML = '<span style="font-size:32px;">▶</span>';
+    }
+    thumb.onclick = function() { window.open(item.url, "_blank"); };
+
+    // 제목
+    var titleEl = document.createElement("div");
+    titleEl.style.cssText = "padding:7px 10px;font-size:12px;font-weight:700;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5;cursor:pointer;";
+    titleEl.textContent = item.title || "";
+    titleEl.onclick = function() { window.open(item.url, "_blank"); };
+
+    // 삭제 버튼
+    var delBtn = document.createElement("button");
+    delBtn.textContent = "✕";
+    delBtn.style.cssText = "position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:11px;cursor:pointer;padding:0;line-height:1;";
+    delBtn.onclick = function(e) {
+      e.stopPropagation();
+      if (!confirm("'" + item.title + "' 영상을 삭제하시겠습니까?")) return;
+      ytBarRef.child(item._id).remove();
+    };
+
+    card.appendChild(thumb);
+    card.appendChild(titleEl);
+    card.appendChild(delBtn);
+    list.appendChild(card);
+  });
+}
+
+// Firebase 로드
+ytBarRef.on("value", function(snap) {
+  var val = snap.val() || {};
+  var items = Object.keys(val).map(function(k) {
+    return Object.assign({ _id: k }, val[k]);
+  }).sort(function(a, b) { return (a.createdAt || 0) - (b.createdAt || 0); });
+  renderYtBar(items);
+});
+
+// 추가 버튼
+document.getElementById("yt-bar-add-toggle").onclick = function() {
+  var form = document.getElementById("yt-bar-form");
+  form.style.display = form.style.display === "none" ? "flex" : "none";
+};
+document.getElementById("yt-bar-cancel").onclick = function() {
+  document.getElementById("yt-bar-form").style.display = "none";
+};
+document.getElementById("yt-bar-submit").onclick = function() {
+  var title = document.getElementById("yt-bar-title").value.trim();
+  var url = document.getElementById("yt-bar-url").value.trim();
+  if (!title || !url) { alert("제목과 URL을 입력해주세요."); return; }
+  if (!url.startsWith("http")) url = "https://" + url;
+  ytBarRef.push({ title: title, url: url, createdAt: Date.now() });
+  document.getElementById("yt-bar-title").value = "";
+  document.getElementById("yt-bar-url").value = "";
+  document.getElementById("yt-bar-form").style.display = "none";
+};
+document.getElementById("yt-bar-url").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") document.getElementById("yt-bar-submit").click();
+});
 
 // ===== 공부 채널 링크바 JS =====
 var channelRef = studyRef.child("channels");
